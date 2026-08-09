@@ -1,0 +1,52 @@
+---
+/**
+ * Lightweight delivery process visual (replaces Platform Kit tenant schematic).
+ */
+interface Stage {
+  name: string;
+  detail: string;
+  active?: boolean;
+}
+
+interface Props {
+  label?: string;
+  stages?: Stage[];
+}
+
+const {
+  label = 'Engagement flow schematic',
+  stages = [
+    { name: 'Discover', detail: 'Goals & constraints', active: true },
+    { name: 'Design', detail: 'Architecture & UX' },
+    { name: 'Build', detail: 'Iterative delivery' },
+    { name: 'Operate', detail: 'Cloud & CI/CD' },
+  ],
+} = Astro.props;
+---
+
+<figure class="m-0" aria-label={label}>
+  <div class="grid gap-3 sm:grid-cols-2">
+    {
+      stages.map((stage) => (
+        <div
+          class:list={[
+            'rounded-lg border px-4 py-3',
+            stage.active
+              ? 'border-accent bg-accent/10'
+              : 'border-border bg-bg-elevated',
+          ]}
+        >
+          <p
+            class:list={[
+              'm-0 text-body-sm font-semibold',
+              stage.active ? 'text-accent' : 'text-fg',
+            ]}
+          >
+            {stage.name}
+          </p>
+          <p class="m-0 mt-1 text-caption text-fg-muted">{stage.detail}</p>
+        </div>
+      ))
+    }
+  </div>
+</figure>

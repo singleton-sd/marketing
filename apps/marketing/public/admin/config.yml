@@ -1,0 +1,67 @@
+# Decap CMS — git-backed editor for company marketing Markdown.
+# Auth: GitHub backend via Azure Function OAuth proxy.
+backend:
+  name: github
+  repo: singleton-sd/marketing
+  branch: main
+  base_url: https://ssd-mkt-decap-oauth-prod-ae.azurewebsites.net
+  auth_endpoint: auth
+
+publish_mode: simple
+
+logo:
+  src: /admin/brand-mark.svg
+  show_in_header: true
+
+site_url: https://singletonsd.com
+display_url: https://singletonsd.com
+
+media_folder: apps/marketing/public/uploads
+public_folder: /uploads
+
+collections:
+  - name: pages
+    label: Pages
+    folder: apps/marketing/src/content/pages
+    create: true
+    delete: false
+    slug: '{{slug}}'
+    extension: md
+    format: frontmatter
+    fields:
+      - label: Title
+        name: title
+        widget: string
+        hint: Page title (browser tab / SEO).
+      - label: Description
+        name: description
+        widget: text
+        required: false
+        hint: Short meta description for SEO.
+      - label: Brand
+        name: brand
+        widget: string
+        required: false
+        hint: Hero brand line (e.g. Singleton Software Development).
+      - label: Headline
+        name: headline
+        widget: string
+        required: false
+        hint: Supporting headline under the brand.
+      - label: CTA label
+        name: ctaLabel
+        widget: string
+        required: false
+      - label: CTA URL
+        name: ctaUrl
+        widget: string
+        required: false
+        hint: Absolute or site-relative URL for the primary button.
+      - label: Last updated
+        name: updated
+        widget: string
+        required: false
+        hint: Display date string (e.g. 9 August 2026).
+      - label: Body
+        name: body
+        widget: markdown

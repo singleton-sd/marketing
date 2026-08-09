@@ -1,0 +1,44 @@
+{
+  "$schema": "./custom-domains.schema.json",
+  "comment": "Company marketing custom domains under singletonsd.com",
+  "zoneDomain": "singletonsd.com",
+  "resourceGroup": "rg-ssd-marketing",
+  "ttlSeconds": 300,
+  "records": [
+    {
+      "name": "www",
+      "type": "CNAME",
+      "value": "REPLACE_WITH_SWA_DEFAULT_HOSTNAME"
+    },
+    {
+      "name": "asuid",
+      "type": "TXT",
+      "value": "REPLACE_WITH_SWA_VALIDATION_ID"
+    },
+    {
+      "name": "asuid.www",
+      "type": "TXT",
+      "value": "REPLACE_WITH_SWA_VALIDATION_ID"
+    }
+  ],
+  "bindings": [
+    {
+      "kind": "swa",
+      "resourceName": "ssd-mkt-prod-ae",
+      "hostname": "www.singletonsd.com"
+    },
+    {
+      "kind": "swa",
+      "resourceName": "ssd-mkt-prod-ae",
+      "hostname": "singletonsd.com"
+    }
+  ],
+  "deploys": [
+    {
+      "name": "marketing",
+      "vaultName": "ssd-global-kv-prod-ae",
+      "secretName": "swa-marketing-deployment-token",
+      "appLocation": "apps/marketing/dist"
+    }
+  ]
+}

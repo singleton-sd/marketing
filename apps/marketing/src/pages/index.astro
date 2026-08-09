@@ -1,0 +1,95 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/marketing/Hero.astro';
+import FeatureGrid from '../components/marketing/FeatureGrid.astro';
+import TrustStrip from '../components/marketing/TrustStrip.astro';
+import SplitContent from '../components/marketing/SplitContent.astro';
+import DeliverySchematic from '../components/marketing/DeliverySchematic.astro';
+import CtaBanner from '../components/marketing/CtaBanner.astro';
+import { getEntry } from 'astro:content';
+import { appCta } from '../lib/nav';
+import type { FeatureItem } from '../lib/marketing-types';
+
+const home = await getEntry('pages', 'home');
+if (!home) {
+  throw new Error('Missing content: pages/home');
+}
+const { Content } = await home.render();
+const { title, description, brand, headline, ctaLabel, ctaUrl } = home.data;
+
+const features: FeatureItem[] = [
+  {
+    title: 'Custom software',
+    description:
+      'Product-minded engineering for web apps, APIs, and internal tools tailored to how your organisation works.',
+    icon: 'zap',
+  },
+  {
+    title: 'Cloud & Azure',
+    description:
+      'Secure cloud foundations on Azure — Static Web Apps, Functions, Key Vault, and CI/CD that operators can trust.',
+    icon: 'database',
+  },
+  {
+    title: 'Product engineering',
+    description:
+      'From discovery to delivery: roadmaps, architecture, and iterative releases that keep stakeholders aligned.',
+    icon: 'users',
+  },
+  {
+    title: 'Design systems',
+    description:
+      'Token-driven UI consistency so every product surface stays on-brand without slowing the team down.',
+    icon: 'check',
+  },
+];
+
+const primaryHref = ctaUrl ?? appCta.href;
+---
+
+<BaseLayout title={title} description={description}>
+  <Hero
+    eyebrow={brand ?? 'Singleton Software Development'}
+    headline={headline ?? 'Software that ships with clarity.'}
+    primaryCta={{
+      label: ctaLabel ?? 'Book a Software Discovery Call',
+      href: primaryHref,
+    }}
+    secondaryCta={{
+      label: 'Explore services',
+      href: '/services',
+    }}
+  >
+    <div class="[&_p]:m-0 [&_p+p]:mt-3">
+      <Content />
+    </div>
+  </Hero>
+
+  <FeatureGrid
+    eyebrow="Services"
+    title="What we build with you"
+    description="Four focused offerings — pick a starting point or combine them into one engagement."
+    features={features}
+    align="center"
+  />
+
+  <TrustStrip items={['Azure', 'TypeScript', 'Next.js', 'Design Tokens']} />
+
+  <SplitContent
+    eyebrow="How we work"
+    title="Discovery first, delivery that lasts"
+    body="We start with a Software Discovery Call to clarify outcomes, constraints, and architecture options. Then we ship in short cycles with clear ownership, documentation, and cloud-ready ops from day one."
+    link={{
+      label: 'Book a Software Discovery Call',
+      href: primaryHref,
+    }}
+  >
+    <DeliverySchematic slot="media" />
+  </SplitContent>
+
+  <CtaBanner
+    title="Ready to talk about your next build?"
+    description="Book a Software Discovery Call and we will map scope, risks, and a practical path to production."
+    cta={{ label: 'Book a Software Discovery Call', href: primaryHref }}
+  />
+</BaseLayout>

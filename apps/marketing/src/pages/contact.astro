@@ -1,0 +1,23 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageContainer from '../components/shell/PageContainer.astro';
+import Button from '../components/ui/Button.astro';
+import { appCta } from '../lib/nav';
+---
+
+<BaseLayout
+  title="Contact — Singleton Software Development"
+  description="Book a Software Discovery Call or email support@singletonsd.com."
+>
+  <PageContainer class="py-16 md:py-24">
+    <p class="m-0 mb-3 text-body-sm font-semibold uppercase tracking-wide text-accent">Contact</p>
+    <h1 class="m-0 font-heading text-h1 text-fg">Get in touch</h1>
+    <p class="mt-4 m-0 max-w-2xl text-base leading-relaxed text-fg-muted">
+      The fastest path is a Software Discovery Call. For general questions, email
+      <a href="mailto:support@singletonsd.com" class="text-accent">support@singletonsd.com</a>.
+    </p>
+    <p class="mt-6 m-0">
+      <Button href={appCta.href} size="lg">{appCta.label}</Button>
+    </p>
+  </PageContainer>
+</BaseLayout>

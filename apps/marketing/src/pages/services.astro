@@ -1,0 +1,62 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageContainer from '../components/shell/PageContainer.astro';
+import FeatureGrid from '../components/marketing/FeatureGrid.astro';
+import CtaBanner from '../components/marketing/CtaBanner.astro';
+import { appCta } from '../lib/nav';
+import type { FeatureItem } from '../lib/marketing-types';
+
+const features: FeatureItem[] = [
+  {
+    title: 'Custom software',
+    description:
+      'Web applications, APIs, and internal tools designed around your workflows and users.',
+    icon: 'zap',
+  },
+  {
+    title: 'Cloud & Azure',
+    description:
+      'Azure-native hosting, secrets, identity boundaries, and deploy pipelines that stay maintainable.',
+    icon: 'database',
+  },
+  {
+    title: 'Product engineering',
+    description:
+      'Discovery, architecture, and delivery practices that keep product and engineering aligned.',
+    icon: 'users',
+  },
+  {
+    title: 'Design systems',
+    description:
+      'Token-based theming and UI foundations so brands stay consistent across products.',
+    icon: 'check',
+  },
+];
+---
+
+<BaseLayout
+  title="Services — Singleton Software Development"
+  description="Custom software, cloud on Azure, product engineering, and design systems."
+>
+  <PageContainer class="py-16 md:py-24">
+    <p class="m-0 mb-3 text-body-sm font-semibold uppercase tracking-wide text-accent">Services</p>
+    <h1 class="m-0 font-heading text-h1 text-fg">What we offer</h1>
+    <p class="mt-4 m-0 max-w-2xl text-base leading-relaxed text-fg-muted">
+      Engagements can focus on one service or combine them. Most start with a Software Discovery Call.
+    </p>
+  </PageContainer>
+
+  <FeatureGrid
+    eyebrow="Capabilities"
+    title="Four ways we help"
+    description="Practical delivery with clear ownership — not slideware."
+    features={features}
+    align="center"
+  />
+
+  <CtaBanner
+    title="Book a Software Discovery Call"
+    description="Tell us about the problem space; we will outline scope, risks, and next steps."
+    cta={{ label: appCta.label, href: appCta.href }}
+  />
+</BaseLayout>

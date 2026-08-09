@@ -1,0 +1,27 @@
+{
+  "name": "singleton-sd-marketing",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "prepare": "husky",
+    "dev": "pnpm --filter @singleton-sd/marketing dev",
+    "build": "pnpm -r run build",
+    "lint": "pnpm -r run lint",
+    "test": "pnpm -r run test",
+    "release": "release-it -VV --dry-run",
+    "release:ci": "release-it --ci"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.6.1",
+    "@commitlint/config-conventional": "^19.6.0",
+    "@release-it/conventional-changelog": "^10.0.0",
+    "husky": "^9.1.7",
+    "release-it": "^18.1.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
