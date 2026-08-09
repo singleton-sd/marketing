@@ -80,9 +80,17 @@ pwsh ./scripts/bind-custom-domains.ps1 -ConfigPath ./infra/custom-domains.market
 
 ## Releases
 
+Dry-run (local, needs clean tree):
+
 ```powershell
-pnpm release        # dry-run (needs clean working tree)
-pnpm release:ci     # bump version, update CHANGELOG.md, tag, GitHub Release
+pnpm release
 ```
 
-Or Actions → **Release Marketing** workflow (`dry_run` toggle).
+Ship a version (tag + CHANGELOG + GitHub Release):
+
+```powershell
+$env:GITHUB_TOKEN = (gh auth token)
+pnpm release:ci
+```
+
+Or Actions → **Release Marketing** (`dry_run` toggle).
