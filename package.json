@@ -15,7 +15,7 @@
     "lint": "pnpm -r run lint",
     "test": "pnpm -r run test",
     "commitlint": "commitlint --edit",
-    "release": "release-it -VV --dry-run",
+    "release": "release-it -VV --dry-run --ci",
     "release:ci": "release-it --ci"
   },
   "devDependencies": {
