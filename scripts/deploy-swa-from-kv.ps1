@@ -114,4 +114,4 @@ finally {
   Remove-Variable token -ErrorAction SilentlyContinue
 }
 
-Write-Host "SWA deploy finished ($AppLocation -> env=$Environment)."
+Write-Host "SWA deploy finished ($AppLocation to env=$Environment)."

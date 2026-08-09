@@ -8,17 +8,7 @@
     {
       "name": "www",
       "type": "CNAME",
-      "value": "REPLACE_WITH_SWA_DEFAULT_HOSTNAME"
-    },
-    {
-      "name": "asuid",
-      "type": "TXT",
-      "value": "REPLACE_WITH_SWA_VALIDATION_ID"
-    },
-    {
-      "name": "asuid.www",
-      "type": "TXT",
-      "value": "REPLACE_WITH_SWA_VALIDATION_ID"
+      "value": "yellow-bush-0894e2800.7.azurestaticapps.net"
     }
   ],
   "bindings": [
