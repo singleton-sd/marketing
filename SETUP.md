@@ -76,3 +76,13 @@ pwsh ./scripts/bind-custom-domains.ps1 -ConfigPath ./infra/custom-domains.market
 | MKT-8 | DNS `86d3zhkzt` |
 | MKT-9 | Deploy/SEO `86d3zhkzv` |
 | MKT-10 | Docs `86d3zhkzw` |
+| MKT-11 | Git conventions / release-it |
+
+## Releases
+
+```powershell
+pnpm release        # dry-run (needs clean working tree)
+pnpm release:ci     # bump version, update CHANGELOG.md, tag, GitHub Release
+```
+
+Or Actions → **Release Marketing** workflow (`dry_run` toggle).

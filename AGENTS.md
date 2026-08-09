@@ -37,4 +37,17 @@ pnpm install
 pnpm dev
 pnpm --filter @singleton-sd/marketing build
 pnpm --filter @singleton-sd/marketing-oauth test
+pnpm release          # dry-run changelog / version bump
+pnpm release:ci       # real release (tag + GitHub Release + CHANGELOG)
 ```
+
+## Git conventions tooling
+
+| Tool | Role |
+| --- | --- |
+| husky | Hooks: commit-msg, pre-commit, post-checkout |
+| commitlint | Conventional commits + `MKT-<n>` ticket rule (`.commitlintrc.cjs`) |
+| release-it | SemVer bump, `CHANGELOG.md`, GitHub Release (`.release-it.json`) |
+| `@release-it/conventional-changelog` | Changelog from conventional commits |
+
+Branch names: `feature/MKT-<n>-slug`, `hotfix/MKT-<n>-slug`, `release/vX.Y.Z`, or `main`.

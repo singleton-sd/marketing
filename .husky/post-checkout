@@ -1,0 +1,37 @@
+#!/usr/bin/env sh
+. "$(dirname "$0")/husky-use-node.sh"
+
+BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
+PREVIOUS_BRANCH=$(git rev-parse --symbolic-full-name --abbrev-ref=loose @{-1} 2>/dev/null || true)
+
+if [ -z "$PREVIOUS_BRANCH" ]; then
+  PREVIOUS_BRANCH="main"
+  echo "Unable to determine the previous branch. Falling back to '$PREVIOUS_BRANCH'."
+fi
+
+set +e
+OUTPUT=$(node .husky/check-branch.mjs 2>&1)
+VALID=$?
+set -e
+
+if [ "$VALID" -ne 0 ]; then
+  echo "$OUTPUT"
+  echo "Invalid branch name: '$BRANCH_NAME'. Rolling back to '$PREVIOUS_BRANCH'."
+
+  if git checkout "$PREVIOUS_BRANCH"; then
+    echo "Switched back to '$PREVIOUS_BRANCH'."
+  else
+    echo "Failed to switch back. Handle manually."
+    exit 1
+  fi
+
+  if git branch -D "$BRANCH_NAME"; then
+    echo "Deleted invalid branch: '$BRANCH_NAME'."
+  else
+    echo "Failed to delete '$BRANCH_NAME'. Delete it manually."
+  fi
+
+  exit 1
+fi
+
+echo "Branch name validation passed for: '$BRANCH_NAME'."

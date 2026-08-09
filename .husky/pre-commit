@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+. "$(dirname "$0")/husky-use-node.sh"
+
+node .husky/check-filenames.mjs
