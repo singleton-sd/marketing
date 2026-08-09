@@ -36,6 +36,13 @@ pnpm dev
 - `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`
 - `DECAP_OAUTH_CLIENT_ID`
 
+Entra app `ssd-mkt-gha-oidc-prod` federated subjects must include both classic and ID-form claims (GitHub may emit either):
+
+- `repo:singleton-sd/marketing:ref:refs/heads/main`
+- `repo:singleton-sd/marketing:pull_request`
+- `repo:singleton-sd@275041854/marketing@1328843767:ref:refs/heads/main`
+- `repo:singleton-sd@275041854/marketing@1328843767:pull_request`
+
 ## Deploy
 
 ```powershell

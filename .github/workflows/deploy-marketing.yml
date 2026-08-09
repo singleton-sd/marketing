@@ -83,7 +83,6 @@ jobs:
           action: upload
           app_location: apps/marketing/dist
           skip_app_build: true
-          production_branch: main
 
       - name: Skip notice (OIDC not configured)
         if: steps.oidc.outputs.configured != 'true'
