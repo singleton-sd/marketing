@@ -152,7 +152,7 @@ function watchPathsFor(pkg) {
     paths.push('infra/marketing.bicep', 'infra/global.bicep');
   }
   if (pkg.name === '@singleton-sd/marketing-oauth') {
-    paths.push('infra/decap-oauth.bicep', 'infra/modules', 'scripts/deploy-decap-oauth.ps1');
+    paths.push('infra/decap-oauth.bicep', 'scripts/deploy-decap-oauth.ps1');
   }
 
   return paths;
@@ -190,23 +190,22 @@ function deriveIncrement(messages) {
 
   for (const message of messages) {
     const subject = message.split('\n')[0] ?? '';
-    if (subject.startsWith('chore: Release')) continue;
+    if (/^chore:\s*Release/i.test(subject)) continue;
 
-    const lower = message.toLowerCase();
     if (
-      /^breaking change:/m.test(lower) ||
-      /^(feat|fix|perf|refactor)(\([^)]*\))?!:/m.test(message)
+      /^breaking change:/im.test(message) ||
+      /^(feat|fix|perf|refactor)(\([^)]*\))?!:/im.test(message)
     ) {
       bump = 'major';
       break;
     }
 
-    if (/^feat(\([^)]*\))?:/m.test(message)) {
+    if (/^feat(\([^)]*\))?:/im.test(message)) {
       if (!bump || rank.minor > rank[bump]) bump = 'minor';
       continue;
     }
 
-    if (/^(fix|perf)(\([^)]*\))?:/m.test(message)) {
+    if (/^(fix|perf)(\([^)]*\))?:/im.test(message)) {
       if (!bump || rank.patch > rank[bump]) bump = 'patch';
     }
   }

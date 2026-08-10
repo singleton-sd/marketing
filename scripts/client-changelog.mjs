@@ -12,6 +12,19 @@ export const CLIENT_CHANGELOG_TARGETS = {
 const CHANGE_TYPES = { feat: 'New', fix: 'Fixed', perf: 'Improved' };
 const DISPLAY_TYPES = ['Breaking', 'New', 'Fixed', 'Improved'];
 
+/** Strip ticket IDs (MKT-n and/or ClickUp 86…) in any order from a subject rest. */
+export function stripTicketPrefixes(text) {
+  let summary = text.trim();
+  for (;;) {
+    const next = summary
+      .replace(/^[A-Z]{1,5}-\d+\s+/i, '')
+      .replace(/^86[a-z0-9]+\s+/i, '');
+    if (next === summary) break;
+    summary = next;
+  }
+  return summary.replace(/\s+\(#\d+\)$/, '').trim();
+}
+
 /** Convert the conventional commits consumed by release into public copy. */
 export function clientFacingChanges(messages) {
   return messages.flatMap((message) => {
@@ -23,11 +36,7 @@ export function clientFacingChanges(messages) {
       return [];
     }
 
-    const summary = match[3]
-      .replace(/^[A-Z]{1,5}-\d+\s+/, '')
-      .replace(/^86[a-z0-9]+\s+/i, '')
-      .replace(/\s+\(#\d+\)$/, '')
-      .trim();
+    const summary = stripTicketPrefixes(match[3]);
     const reason =
       breakingFooter ??
       bodyLines

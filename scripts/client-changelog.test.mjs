@@ -7,6 +7,7 @@ import {
   clientFacingChanges,
   formatProductChangelog,
   parseProductChangelog,
+  stripTicketPrefixes,
   updateClientChangelogs,
 } from './client-changelog.mjs';
 
@@ -25,6 +26,16 @@ test('turns releasable conventional commits into public changes', () => {
       },
       { type: 'Fixed', summary: 'Preserve filters' },
     ],
+  );
+});
+
+test('strips ticket IDs in either order from public summaries', () => {
+  assert.equal(stripTicketPrefixes('MKT-13 86d3zmvye Port changelog'), 'Port changelog');
+  assert.equal(stripTicketPrefixes('86d3zmvye MKT-13 Port changelog'), 'Port changelog');
+  assert.equal(stripTicketPrefixes('86d3zmvye Port changelog (#9)'), 'Port changelog');
+  assert.deepEqual(
+    clientFacingChanges(['feat: 86d3zmvye MKT-13 Let visitors browse Whats new']),
+    [{ type: 'New', summary: 'Let visitors browse Whats new' }],
   );
 });
 
