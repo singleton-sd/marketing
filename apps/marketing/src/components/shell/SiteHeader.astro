@@ -6,13 +6,9 @@ import { LOGO_LIGHT, SITE_NAME } from '../../lib/site';
 
 interface Props {
   currentPath?: string;
-  brand?: string;
 }
 
-const {
-  currentPath = '/',
-  brand = 'Singleton SD',
-} = Astro.props;
+const { currentPath = '/' } = Astro.props;
 
 function isActive(href: string) {
   if (href === '/') return currentPath === '/';
@@ -35,7 +31,6 @@ function isActive(href: string) {
         class="size-10 shrink-0 md:size-11"
         decoding="async"
       />
-      <span class="sr-only">{brand}</span>
     </a>
 
     <nav class="hidden items-center gap-8 md:flex" aria-label="Primary">
@@ -103,7 +98,6 @@ function isActive(href: string) {
               class="size-10 shrink-0"
               decoding="async"
             />
-            <span class="sr-only">{brand}</span>
           </a>
           <button
             type="button"

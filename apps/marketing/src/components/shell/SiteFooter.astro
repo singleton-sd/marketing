@@ -4,12 +4,10 @@ import { footerColumns } from '../../lib/nav';
 import { LOGO_DARK, SITE_NAME } from '../../lib/site';
 
 interface Props {
-  brand?: string;
   blurb?: string;
 }
 
 const {
-  brand = 'Singleton SD',
   blurb = 'Custom software, cloud on Azure, product engineering, and design systems.',
 } = Astro.props;
 
@@ -20,7 +18,7 @@ const year = new Date().getFullYear();
   <div class="mx-auto max-w-content px-5 py-12 md:px-10 md:py-16">
     <div class="flex flex-col gap-12 lg:flex-row lg:justify-between">
       <div class="max-w-xs space-y-4">
-        <a href="/" class="inline-flex items-center gap-2.5 no-underline" aria-label={SITE_NAME}>
+        <a href="/" class="inline-flex items-center no-underline" aria-label={SITE_NAME}>
           <img
             src={LOGO_DARK}
             alt=""
@@ -29,7 +27,6 @@ const year = new Date().getFullYear();
             class="size-8 shrink-0"
             decoding="async"
           />
-          <span class="sr-only">{brand}</span>
         </a>
         <p class="m-0 text-caption text-fg-subtle">{blurb}</p>
       </div>

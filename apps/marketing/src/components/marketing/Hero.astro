@@ -1,6 +1,7 @@
 ---
 import Button from '../ui/Button.astro';
 import PageContainer from '../shell/PageContainer.astro';
+import { SITE_NAME } from '../../lib/site';
 
 interface Props {
   eyebrow?: string;
@@ -22,6 +23,8 @@ const {
   secondaryCta,
   class: className = '',
 } = Astro.props;
+
+const brandLogoAlt = eyebrow || SITE_NAME;
 ---
 
 <section class:list={['bg-bg-hero', className]}>
@@ -30,7 +33,7 @@ const {
       brandLogo ? (
         <img
           src={brandLogo}
-          alt={eyebrow ?? ''}
+          alt={brandLogoAlt}
           width="112"
           height="112"
           class="mb-8 size-20 md:mb-10 md:size-28"
