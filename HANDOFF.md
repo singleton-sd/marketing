@@ -40,6 +40,7 @@ Create OAuth App (UI only): https://github.com/settings/developers
 
 ```powershell
 powershell -File ./scripts/bootstrap-decap-oauth.ps1 -ClientId '<id>' -ClientSecret '<secret>'
+# Saves to global KV: client-id, client-secret, and app-config JSON (name/homepage/callback)
 powershell -File ./scripts/deploy-decap-oauth.ps1 -OauthClientId '<id>'
 ```
 
