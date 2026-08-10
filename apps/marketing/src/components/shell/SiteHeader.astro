@@ -7,13 +7,11 @@ import { LOGO_LIGHT, SITE_NAME } from '../../lib/site';
 interface Props {
   currentPath?: string;
   brand?: string;
-  tagline?: string;
 }
 
 const {
   currentPath = '/',
   brand = 'Singleton SD',
-  tagline = 'Software Development',
 } = Astro.props;
 
 function isActive(href: string) {
@@ -26,19 +24,18 @@ function isActive(href: string) {
   <div class="mx-auto flex h-14 max-w-content items-center justify-between px-5 md:h-16 md:px-10">
     <a
       href="/"
-      class="flex items-center gap-2.5 text-body-sm no-underline"
+      class="inline-flex items-center no-underline"
       aria-label={`${SITE_NAME} — home`}
     >
       <img
         src={LOGO_LIGHT}
         alt=""
-        width="36"
-        height="36"
-        class="size-8 shrink-0 md:size-9"
+        width="44"
+        height="44"
+        class="size-10 shrink-0 md:size-11"
         decoding="async"
       />
       <span class="sr-only">{brand}</span>
-      <span class="hidden text-caption text-fg-muted sm:inline">{tagline}</span>
     </a>
 
     <nav class="hidden items-center gap-8 md:flex" aria-label="Primary">
@@ -95,15 +92,15 @@ function isActive(href: string) {
         <div class="flex items-center justify-between">
           <a
             href="/"
-            class="flex items-center gap-2.5 no-underline"
+            class="inline-flex items-center no-underline"
             aria-label={`${SITE_NAME} — home`}
           >
             <img
               src={LOGO_LIGHT}
               alt=""
-              width="36"
-              height="36"
-              class="size-9 shrink-0"
+              width="44"
+              height="44"
+              class="size-10 shrink-0"
               decoding="async"
             />
             <span class="sr-only">{brand}</span>
