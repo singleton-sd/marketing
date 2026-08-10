@@ -42,7 +42,7 @@ importers:
         specifier: ^0.9.4
         version: 0.9.10(prettier@3.9.6)(typescript@5.9.3)
       '@astrojs/sitemap':
-        specifier: ^3.6.0
+        specifier: 3.6.0
         version: 3.6.0
       '@astrojs/tailwind':
         specifier: ^5.1.4
