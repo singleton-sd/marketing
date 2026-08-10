@@ -10,8 +10,8 @@ backend:
 publish_mode: simple
 
 logo:
-  # Centered circle mark + “Content admin” (mark loaded from CDN inside the SVG).
-  src: /admin/brand-mark.svg
+  # Absolute CDN URL — browsers block external <image> refs inside SVG used as <img>.
+  src: https://assets.singletonsd.com/logo/static/dark/circle/bg-none/512.png
   show_in_header: true
 
 site_url: https://www.singletonsd.com

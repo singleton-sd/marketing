@@ -120,18 +120,30 @@ a {
 
 [class*='AuthenticationPage'] [class*='CustomIconWrapper'] {
   display: flex !important;
+  flex-direction: column !important;
   justify-content: center !important;
   align-items: center !important;
-  width: min(12.5rem, 70vw) !important;
-  max-width: min(12.5rem, 70vw) !important;
-  margin: 0 auto 1.25rem !important;
+  width: min(7.5rem, 42vw) !important;
+  max-width: min(7.5rem, 42vw) !important;
+  margin: 0 auto 1.5rem !important;
+}
+
+[class*='AuthenticationPage'] [class*='CustomIconWrapper']::after {
+  content: 'Content admin';
+  display: block;
+  margin-top: 0.75rem;
+  font-family: var(--font-families-body), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--pk-muted);
 }
 
 [class*='AuthenticationPage'] img {
   background: transparent !important;
   display: block !important;
   margin: 0 auto !important;
-  max-height: 7.5rem !important;
+  max-height: none !important;
   max-width: 100% !important;
   width: 100% !important;
   height: auto !important;
