@@ -5,6 +5,8 @@ const pages = defineCollection({
   schema: z.object({
     title: z.string(),
     description: z.string().optional(),
+    /** Absolute CDN URL (e.g. assets.singletonsd.com) or site-relative path. */
+    ogImage: z.string().optional(),
     brand: z.string().optional(),
     headline: z.string().optional(),
     ctaLabel: z.string().optional(),

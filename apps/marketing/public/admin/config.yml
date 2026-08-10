@@ -13,8 +13,8 @@ logo:
   src: /admin/brand-mark.svg
   show_in_header: true
 
-site_url: https://singletonsd.com
-display_url: https://singletonsd.com
+site_url: https://www.singletonsd.com
+display_url: https://www.singletonsd.com
 
 media_folder: apps/marketing/public/uploads
 public_folder: /uploads
@@ -37,17 +37,22 @@ collections:
         name: description
         widget: text
         required: false
-        hint: Short meta description for SEO.
+        hint: Short meta description for SEO (~150–160 characters).
+      - label: OG image URL
+        name: ogImage
+        widget: string
+        required: false
+        hint: Absolute URL on assets.singletonsd.com (or leave blank for the default light OG image).
       - label: Brand
         name: brand
         widget: string
         required: false
-        hint: Hero brand line (e.g. Singleton Software Development).
+        hint: Hero eyebrow / brand line (e.g. Singleton Software Development).
       - label: Headline
         name: headline
         widget: string
         required: false
-        hint: Supporting headline under the brand.
+        hint: Primary H1 under the brand line.
       - label: CTA label
         name: ctaLabel
         widget: string

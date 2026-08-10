@@ -80,6 +80,16 @@ pwsh ./scripts/bind-custom-domains.ps1 -ConfigPath ./infra/custom-domains.market
 | MKT-12 | Path-aware release (poc parity) `86d3zmcm6` |
 | MKT-13 | Client `/changelog` What’s new `86d3zmvye` |
 
+## Domain & assets
+
+| Host | Role |
+| --- | --- |
+| `www.singletonsd.com` | Canonical site (Azure SWA `ssd-mkt-prod-ae`) |
+| `singletonsd.com` (apex) | Existing CloudFront 301 → `https://www.singletonsd.com/` |
+| `assets.singletonsd.com` | Brand CDN — favicons/OG linked from app; do not vendor binaries into this repo |
+
+Canonical origin in Astro/`config.yml`: `https://www.singletonsd.com`.
+
 ## Releases
 
 Path-aware bumps (same model as poc-plattform-kit): each `@singleton-sd/*`

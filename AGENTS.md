@@ -19,8 +19,9 @@ ClickUp tickets must include `[repo=singleton-sd/marketing]`.
 | Site | Astro SSG (`apps/marketing`) |
 | CMS | Decap at `/admin` (GitHub backend) |
 | OAuth | Azure Function `ssd-mkt-decap-oauth-prod-ae` |
-| Host | Azure SWA Free `ssd-mkt-prod-ae` |
+| Host | Azure SWA Free `ssd-mkt-prod-ae` (`www.singletonsd.com`) |
 | Secrets | Shared KV `ssd-global-kv-prod-ae` in `rg-ssd-global` |
+| Assets CDN | `assets.singletonsd.com` (favicons/OG — link only, no binaries in repo) |
 | App RG | `rg-ssd-marketing` |
 | Subscription | `01c0bb8b-3770-4765-979a-cb13ae7e3dd2` (Singleton SD) |
 
