@@ -693,17 +693,33 @@ div[class*='Modal'][class*='Styled'],
   background: var(--pk-bg);
 }
 
-/* Login */
-[class*='AuthenticationPage'],
-[class*='AuthButton'] {
+/* Login — flat charcoal; no raised AuthForm tile */
+[class*='AuthenticationPage'] {
   background-color: var(--pk-bg) !important;
   color: var(--pk-fg) !important;
 }
 
+[class*='AuthenticationPage'] [class*='AuthForm'],
+[class*='AuthenticationPage'] [class*='Card'] {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
 [class*='LoginButton'],
-[class*='AuthButton'] button {
+[class*='AuthButton'] button,
+[class*='AuthenticationPage'] button {
   background-color: var(--pk-accent) !important;
   color: var(--pk-accent-on) !important;
+  border-color: var(--pk-accent) !important;
+  fill: var(--pk-accent-on) !important;
+}
+
+[class*='LoginButton'] *,
+[class*='AuthButton'] button *,
+[class*='AuthenticationPage'] button * {
+  color: var(--pk-accent-on) !important;
+  fill: var(--pk-accent-on) !important;
 }
 
 /* Hide Decap credit mark under the custom logo */

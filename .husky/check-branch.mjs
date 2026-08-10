@@ -1,17 +1,15 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { execSync } from 'node:child_process';
 
 function getCurrentBranchName() {
-  const headPath = resolve('.git', 'HEAD');
-  const headContent = readFileSync(headPath, 'utf8').trim();
-  const branchMatch = headContent.match(/^ref: refs\/heads\/(.+)$/);
-
-  if (branchMatch && branchMatch[1]) {
-    return branchMatch[1];
+  try {
+    return execSync('git rev-parse --abbrev-ref HEAD', {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }).trim();
+  } catch {
+    console.error('Error: Unable to determine the current branch.');
+    process.exit(1);
   }
-
-  console.error('Error: Unable to determine the current branch.');
-  process.exit(1);
 }
 
 const branchName = getCurrentBranchName();
