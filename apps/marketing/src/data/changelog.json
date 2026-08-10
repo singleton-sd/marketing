@@ -2,6 +2,17 @@
   "product": "@singleton-sd/marketing",
   "releases": [
     {
+      "version": "0.3.0",
+      "date": "2026-08-10",
+      "changes": [
+        {
+          "type": "New",
+          "summary": "MKT-14/15 SEO baseline and CMS marketing pages",
+          "reason": "Wire www canonical host, CDN favicons/OG, sitemap, and"
+        }
+      ]
+    },
+    {
       "version": "0.2.0",
       "date": "2026-08-10",
       "changes": [
