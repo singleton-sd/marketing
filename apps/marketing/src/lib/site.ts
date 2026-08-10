@@ -1,3 +1,5 @@
+import { resolveOgImageUrl as resolveOgImageUrlImpl } from './resolve-og-image-url.mjs';
+
 /** Brand assets hosted on the company CDN — do not vendor binaries into this repo. */
 export const ASSETS_ORIGIN = 'https://assets.singletonsd.com';
 
@@ -23,8 +25,5 @@ export function resolveOgImageUrl(
   site: URL | undefined,
   fallback = DEFAULT_OG_IMAGE,
 ): string {
-  if (!ogImage) return fallback;
-  if (/^https?:\/\//i.test(ogImage)) return ogImage;
-  if (site) return new URL(ogImage, site).href;
-  return ogImage;
+  return resolveOgImageUrlImpl(ogImage, site, fallback);
 }

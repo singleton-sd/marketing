@@ -6,6 +6,8 @@ import tailwind from '@astrojs/tailwind';
 export default defineConfig({
   site: 'https://www.singletonsd.com',
   output: 'static',
+  // Match sitemap/canonical URLs (/about/) and SWA directory output.
+  trailingSlash: 'always',
   integrations: [
     tailwind({
       applyBaseStyles: false,

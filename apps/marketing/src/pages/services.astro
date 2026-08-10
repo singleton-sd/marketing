@@ -44,14 +44,7 @@ const features: FeatureItem[] = [
 ---
 
 <BaseLayout title={title} description={description} ogImage={ogImage}>
-  <Hero
-    eyebrow={brand ?? 'Services'}
-    headline={headline ?? 'What we offer'}
-    primaryCta={{
-      label: ctaLabel ?? appCta.label,
-      href: primaryHref,
-    }}
-  >
+  <Hero eyebrow={brand ?? 'Services'} headline={headline ?? 'What we offer'}>
     <div class="[&_p]:m-0 [&_p+p]:mt-3">
       <Content />
     </div>
