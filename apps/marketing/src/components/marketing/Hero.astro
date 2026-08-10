@@ -1,9 +1,12 @@
 ---
 import Button from '../ui/Button.astro';
 import PageContainer from '../shell/PageContainer.astro';
+import { SITE_NAME } from '../../lib/site';
 
 interface Props {
   eyebrow?: string;
+  /** When set, replaces the text eyebrow with a centered brand mark. */
+  brandLogo?: string;
   headline: string;
   subheadline?: string;
   primaryCta?: { label: string; href: string };
@@ -13,18 +16,30 @@ interface Props {
 
 const {
   eyebrow,
+  brandLogo,
   headline,
   subheadline,
   primaryCta,
   secondaryCta,
   class: className = '',
 } = Astro.props;
+
+const brandLogoAlt = eyebrow || SITE_NAME;
 ---
 
 <section class:list={['bg-bg-hero', className]}>
   <PageContainer class="flex flex-col items-center px-5 py-16 text-center md:py-24 lg:py-[7.5rem]">
     {
-      eyebrow ? (
+      brandLogo ? (
+        <img
+          src={brandLogo}
+          alt={brandLogoAlt}
+          width="112"
+          height="112"
+          class="mb-8 size-20 md:mb-10 md:size-28"
+          decoding="async"
+        />
+      ) : eyebrow ? (
         <p class="m-0 mb-6 text-body-sm font-bold uppercase tracking-wide text-accent">
           {eyebrow}
         </p>

@@ -10,7 +10,8 @@ backend:
 publish_mode: simple
 
 logo:
-  src: /admin/brand-mark.svg
+  # Absolute CDN URL — browsers block external <image> refs inside SVG used as <img>.
+  src: https://assets.singletonsd.com/logo/static/dark/circle/bg-none/512.png
   show_in_header: true
 
 site_url: https://www.singletonsd.com

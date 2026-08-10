@@ -101,25 +101,63 @@ a {
   box-shadow: none !important;
 }
 
-/* Logo — no floating gray tile; taller mark on login for subtitle */
+/* Logo — no floating gray tile; circle mark sizes */
 [class*='AppHeader'] img,
 [class*='AppHeader'] [class*='logo'] {
   background: transparent !important;
-  max-height: 2.5rem !important;
+  max-height: 2.25rem !important;
   width: auto !important;
 }
 
+/* Login: center brand mark + stack above the GitHub CTA */
+[class*='AuthenticationPage'] {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+}
+
 [class*='AuthenticationPage'] [class*='CustomIconWrapper'] {
-  width: min(18rem, 90vw) !important;
-  margin-bottom: 0.5rem !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: min(7.5rem, 42vw) !important;
+  max-width: min(7.5rem, 42vw) !important;
+  margin: 0 auto 1.5rem !important;
+}
+
+[class*='AuthenticationPage'] [class*='CustomIconWrapper']::after {
+  content: 'Content admin';
+  display: block;
+  margin-top: 0.75rem;
+  font-family: var(--font-families-body), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--pk-muted);
 }
 
 [class*='AuthenticationPage'] img {
   background: transparent !important;
+  display: block !important;
+  margin: 0 auto !important;
   max-height: none !important;
   max-width: 100% !important;
   width: 100% !important;
   height: auto !important;
+}
+
+[class*='AuthenticationPage'] [class*='AuthForm'],
+[class*='AuthenticationPage'] [class*='Card'] {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  width: 100% !important;
+  max-width: 22rem !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
 }
 
 /* SidebarContainer */

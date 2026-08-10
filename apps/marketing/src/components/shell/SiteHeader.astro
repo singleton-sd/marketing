@@ -2,18 +2,13 @@
 import Button from '../ui/Button.astro';
 import Icon from '../ui/Icon.astro';
 import { appCta, primaryNav } from '../../lib/nav';
+import { LOGO_LIGHT, SITE_NAME } from '../../lib/site';
 
 interface Props {
   currentPath?: string;
-  brand?: string;
-  tagline?: string;
 }
 
-const {
-  currentPath = '/',
-  brand = 'Singleton SD',
-  tagline = 'Software Development',
-} = Astro.props;
+const { currentPath = '/' } = Astro.props;
 
 function isActive(href: string) {
   if (href === '/') return currentPath === '/';
@@ -23,10 +18,19 @@ function isActive(href: string) {
 
 <header class="sticky top-0 z-40 border-b border-border bg-bg">
   <div class="mx-auto flex h-14 max-w-content items-center justify-between px-5 md:h-16 md:px-10">
-    <a href="/" class="flex items-center gap-2 text-body-sm no-underline">
-      <span class="font-bold text-fg">{brand}</span>
-      <span class="size-1.5 rounded-full bg-accent" aria-hidden="true"></span>
-      <span class="hidden text-caption text-fg-muted sm:inline">{tagline}</span>
+    <a
+      href="/"
+      class="inline-flex items-center no-underline"
+      aria-label={`${SITE_NAME} — home`}
+    >
+      <img
+        src={LOGO_LIGHT}
+        alt=""
+        width="44"
+        height="44"
+        class="size-10 shrink-0 md:size-11"
+        decoding="async"
+      />
     </a>
 
     <nav class="hidden items-center gap-8 md:flex" aria-label="Primary">
@@ -81,7 +85,20 @@ function isActive(href: string) {
     <div class="flex h-full flex-col justify-between p-6">
       <div class="flex flex-col gap-8">
         <div class="flex items-center justify-between">
-          <a href="/" class="font-bold text-fg no-underline">{brand}</a>
+          <a
+            href="/"
+            class="inline-flex items-center no-underline"
+            aria-label={`${SITE_NAME} — home`}
+          >
+            <img
+              src={LOGO_LIGHT}
+              alt=""
+              width="44"
+              height="44"
+              class="size-10 shrink-0"
+              decoding="async"
+            />
+          </a>
           <button
             type="button"
             class="inline-flex size-10 items-center justify-center rounded-md text-fg"

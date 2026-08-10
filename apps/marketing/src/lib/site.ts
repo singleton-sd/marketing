@@ -9,7 +9,13 @@ export const SITE_NAME = 'Singleton Software Development';
 
 export const DEFAULT_OG_IMAGE = `${ASSETS_ORIGIN}/og-image/light/og-default.jpg`;
 
-export const ORGANIZATION_LOGO = `${ASSETS_ORIGIN}/logo/static/dark/circle/bg-none/512.png`;
+/** Circle mark for light surfaces (header, hero). */
+export const LOGO_LIGHT = `${ASSETS_ORIGIN}/logo/static/light/circle/bg-none/512.png`;
+
+/** Circle mark for dark surfaces (footer, Decap admin). */
+export const LOGO_DARK = `${ASSETS_ORIGIN}/logo/static/dark/circle/bg-none/512.png`;
+
+export const ORGANIZATION_LOGO = LOGO_DARK;
 
 export const FAVICON = {
   manifest: `${ASSETS_ORIGIN}/favicons/circle/bg-none/site.webmanifest`,
