@@ -15,7 +15,7 @@ if (!home) {
   throw new Error('Missing content: pages/home');
 }
 const { Content } = await home.render();
-const { title, description, brand, headline, ctaLabel, ctaUrl } = home.data;
+const { title, description, ogImage, brand, headline, ctaLabel, ctaUrl } = home.data;
 
 const features: FeatureItem[] = [
   {
@@ -47,7 +47,7 @@ const features: FeatureItem[] = [
 const primaryHref = ctaUrl ?? appCta.href;
 ---
 
-<BaseLayout title={title} description={description}>
+<BaseLayout title={title} description={description} ogImage={ogImage}>
   <Hero
     eyebrow={brand ?? 'Singleton Software Development'}
     headline={headline ?? 'Software that ships with clarity.'}

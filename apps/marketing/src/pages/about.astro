@@ -1,24 +1,29 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import PageContainer from '../components/shell/PageContainer.astro';
-import Button from '../components/ui/Button.astro';
+import Hero from '../components/marketing/Hero.astro';
+import { getEntry } from 'astro:content';
 import { appCta } from '../lib/nav';
+
+const page = await getEntry('pages', 'about');
+if (!page) {
+  throw new Error('Missing content: pages/about');
+}
+const { Content } = await page.render();
+const { title, description, ogImage, brand, headline, ctaLabel, ctaUrl } = page.data;
+const primaryHref = ctaUrl ?? appCta.href;
 ---
 
-<BaseLayout
-  title="About — Singleton Software Development"
-  description="Singleton SD builds software products and cloud platforms for teams that need clarity and delivery."
->
-  <PageContainer class="py-16 md:py-24">
-    <p class="m-0 mb-3 text-body-sm font-semibold uppercase tracking-wide text-accent">About</p>
-    <h1 class="m-0 font-heading text-h1 text-fg">Singleton Software Development</h1>
-    <p class="mt-4 m-0 max-w-2xl text-base leading-relaxed text-fg-muted">
-      We are a software company focused on custom products, Azure cloud foundations, product
-      engineering, and design systems. We bring the same stack discipline we use on our own
-      platforms to client engagements.
-    </p>
-    <p class="mt-6 m-0">
-      <Button href={appCta.href} size="lg">{appCta.label}</Button>
-    </p>
-  </PageContainer>
+<BaseLayout title={title} description={description} ogImage={ogImage}>
+  <Hero
+    eyebrow={brand ?? 'About'}
+    headline={headline ?? 'Singleton Software Development'}
+    primaryCta={{
+      label: ctaLabel ?? appCta.label,
+      href: primaryHref,
+    }}
+  >
+    <div class="[&_p]:m-0 [&_p+p]:mt-3">
+      <Content />
+    </div>
+  </Hero>
 </BaseLayout>

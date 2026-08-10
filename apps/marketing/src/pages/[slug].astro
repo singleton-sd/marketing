@@ -5,8 +5,9 @@ import { getCollection, type CollectionEntry } from 'astro:content';
 
 export async function getStaticPaths() {
   const pages = await getCollection('pages');
+  const dedicated = new Set(['home', 'about', 'services', 'contact']);
   return pages
-    .filter((entry) => entry.slug !== 'home')
+    .filter((entry) => !dedicated.has(entry.slug))
     .map((entry) => ({
       params: { slug: entry.slug },
       props: { page: entry },
@@ -19,10 +20,10 @@ interface Props {
 
 const { page } = Astro.props;
 const { Content } = await page.render();
-const { title, description, updated } = page.data;
+const { title, description, ogImage, updated } = page.data;
 ---
 
-<BaseLayout title={title} description={description}>
+<BaseLayout title={title} description={description} ogImage={ogImage}>
   <PageContainer narrow class="pb-16 pt-[clamp(2rem,8vh,4rem)]">
     <a
       class="mb-6 inline-block text-fg-muted no-underline hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
