@@ -1,4 +1,21 @@
 {
   "product": "@singleton-sd/marketing",
-  "releases": []
+  "releases": [
+    {
+      "version": "0.2.0",
+      "date": "2026-08-10",
+      "changes": [
+        {
+          "type": "New",
+          "summary": "MKT-12/13 Path-aware release, admin UI, Whats new",
+          "reason": "Match poc-plattform-kit: path-aware package bumps, date CHANGELOG,"
+        },
+        {
+          "type": "New",
+          "summary": "add company marketing landing site",
+          "reason": "Astro + Decap extract from poc, Singleton SD content,"
+        }
+      ]
+    }
+  ]
 }
