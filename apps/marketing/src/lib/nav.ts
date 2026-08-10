@@ -15,6 +15,7 @@ export const footerColumns: { title: string; links: NavLink[] }[] = [
     links: [
       { label: 'Services', href: '/services' },
       { label: 'Discovery call', href: 'https://calendar.app.google/MP4w31TVxQ2G18T58' },
+      { label: 'What’s new', href: '/changelog' },
     ],
   },
   {

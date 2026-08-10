@@ -30,6 +30,12 @@ ClickUp tickets must include `[repo=singleton-sd/marketing]`.
 - Solo agent runs may merge to `main` without PRs; still maintain `preview-marketing.yml` for human PRs
 - Never put secrets in GitHub Secrets — OIDC → Key Vault only
 
+## Sources of truth (poc)
+
+When copying patterns from `poc-plattform-kit`, **always** inspect
+`origin/main` after `git fetch origin main` (local checkouts are often
+detached/behind). Do not rely on a dirty or stale worktree.
+
 ## Commands
 
 ```bash
@@ -39,6 +45,8 @@ pnpm --filter @singleton-sd/marketing build
 pnpm --filter @singleton-sd/marketing-oauth test
 pnpm release          # dry-run path-aware package bumps
 pnpm release:ci       # bump, CHANGELOG, commit, tag, push (CI only)
+pnpm changelog:test   # client-facing changelog unit tests
+pnpm changelog:check  # MD ↔ JSON projection drift check
 ```
 
 ## Git conventions tooling
@@ -48,8 +56,10 @@ pnpm release:ci       # bump, CHANGELOG, commit, tag, push (CI only)
 | husky | Hooks: commit-msg, pre-commit, post-checkout |
 | commitlint | Conventional commits + `MKT-<n>` ticket rule (`.commitlintrc.cjs`) |
 | `scripts/release-changed.mjs` | Path-aware SemVer bumps per `@singleton-sd/*` package |
+| `scripts/client-changelog.mjs` | Client-facing `/changelog` Markdown + JSON projections |
 | release-it | Available for manual/single-package use (`.release-it.json`; git/GitHub off) |
-| `CHANGELOG.md` | Date sections with `pkg` `from` → `to` (increment) |
+| Root `CHANGELOG.md` | Date sections with package bump index |
+| `apps/marketing/CHANGELOG.md` | Canonical product release notes → `/changelog` |
 
 Branch names: `feature/MKT-<n>-slug`, `hotfix/MKT-<n>-slug`, `release/vX.Y.Z`, or `main`.
 

@@ -15,7 +15,11 @@
     "test": "pnpm -r run test",
     "commitlint": "commitlint --edit",
     "release": "node ./scripts/release-changed.mjs",
-    "release:ci": "node ./scripts/release-changed.mjs --ci"
+    "release:ci": "node ./scripts/release-changed.mjs --ci",
+    "changelog:check": "node ./scripts/check-client-changelogs.mjs",
+    "changelog:test": "node --test ./scripts/client-changelog.test.mjs ./scripts/backfill-client-changelogs.test.mjs ./scripts/check-client-changelogs.test.mjs",
+    "changelog:backfill": "node ./scripts/backfill-client-changelogs.mjs",
+    "changelog:backfill:dry-run": "node ./scripts/backfill-client-changelogs.mjs --dry-run"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.6.1",

@@ -18,6 +18,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import semver from 'semver';
+import { CLIENT_CHANGELOG_TARGETS, updateClientChangelogs } from './client-changelog.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const CI = process.argv.includes('--ci');
@@ -264,7 +265,11 @@ function updateChangelog(releases) {
   const section = [
     `## ${date}`,
     '',
-    ...releases.map((r) => `- **${r.name}** \`${r.version}\` → \`${r.next}\` (${r.increment})`),
+    ...releases.map((r) => {
+      const target = CLIENT_CHANGELOG_TARGETS[r.name];
+      const name = target ? `[${r.name}](${target.markdown})` : r.name;
+      return `- **${name}** \`${r.version}\` → \`${r.next}\` (${r.increment})`;
+    }),
     '',
   ].join('\n');
 
@@ -348,7 +353,7 @@ function main() {
     return;
   }
 
-  /** @type {{ name: string, path: string, version: string, next: string, increment: Increment, tag: string }[]} */
+  /** @type {{ name: string, path: string, version: string, next: string, increment: Increment, tag: string, messages: string[] }[]} */
   const releases = [];
 
   for (const pkg of packages) {
@@ -366,6 +371,7 @@ function main() {
       next: resolved.next,
       increment,
       tag: resolved.tag,
+      messages,
     });
   }
 
@@ -389,6 +395,7 @@ function main() {
   }
 
   updateChangelog(releases);
+  updateClientChangelogs(ROOT, releases, new Date().toISOString().slice(0, 10));
 
   const body = releases.map((r) => `- ${r.tag}`).join('\n');
   const message = `${RELEASE_SUBJECT}\n\n${body}\n`;
@@ -397,6 +404,10 @@ function main() {
     run('git', ['add', join(release.path, 'package.json')]);
   }
   run('git', ['add', 'CHANGELOG.md']);
+  for (const release of releases) {
+    const targets = CLIENT_CHANGELOG_TARGETS[release.name];
+    if (targets) run('git', ['add', targets.markdown, targets.data]);
+  }
   // Release commits are auto-generated; bypass hooks (ticket rule).
   run('git', ['commit', '-m', message], {
     env: { ...process.env, HUSKY: '0' },
