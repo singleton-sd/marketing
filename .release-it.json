@@ -1,27 +1,24 @@
 {
   "$schema": "https://unpkg.com/release-it/schema/release-it.json",
   "git": {
-    "commitMessage": "chore: Release v${version}\n\n[skip ci]",
-    "requireCleanWorkingDir": true,
-    "commit": true,
-    "push": true,
-    "tag": true,
-    "tagName": "v${version}"
+    "commit": false,
+    "tag": false,
+    "push": false,
+    "requireCleanWorkingDir": false,
+    "requireUpstream": false
   },
   "npm": {
     "publish": false
   },
   "github": {
-    "release": true,
-    "releaseName": "v${version}"
+    "release": false
   },
   "plugins": {
     "@release-it/conventional-changelog": {
-      "infile": "CHANGELOG.md",
       "preset": {
-        "name": "conventionalcommits",
-        "compareUrlFormat": "{{host}}/{{owner}}/{{repository}}/compare/{{currentTag}}..{{previousTag}}"
-      }
+        "name": "conventionalcommits"
+      },
+      "infile": false
     }
   }
 }

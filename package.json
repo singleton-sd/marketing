@@ -1,7 +1,6 @@
 {
   "name": "singleton-sd-marketing",
   "private": true,
-  "version": "0.1.0",
   "description": "Singleton Software Development company marketing site",
   "repository": {
     "type": "git",
@@ -15,8 +14,12 @@
     "lint": "pnpm -r run lint",
     "test": "pnpm -r run test",
     "commitlint": "commitlint --edit",
-    "release": "release-it -VV --dry-run --ci",
-    "release:ci": "release-it --ci"
+    "release": "node ./scripts/release-changed.mjs",
+    "release:ci": "node ./scripts/release-changed.mjs --ci",
+    "changelog:check": "node ./scripts/check-client-changelogs.mjs",
+    "changelog:test": "node --test ./scripts/client-changelog.test.mjs ./scripts/backfill-client-changelogs.test.mjs ./scripts/check-client-changelogs.test.mjs",
+    "changelog:backfill": "node ./scripts/backfill-client-changelogs.mjs",
+    "changelog:backfill:dry-run": "node ./scripts/backfill-client-changelogs.mjs --dry-run"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.6.1",
@@ -25,6 +28,7 @@
     "conventional-changelog-conventionalcommits": "^8.0.0",
     "husky": "^9.1.7",
     "release-it": "^18.1.2",
+    "semver": "^7.7.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2"
   },

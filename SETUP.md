@@ -77,20 +77,29 @@ pwsh ./scripts/bind-custom-domains.ps1 -ConfigPath ./infra/custom-domains.market
 | MKT-9 | Deploy/SEO `86d3zhkzv` |
 | MKT-10 | Docs `86d3zhkzw` |
 | MKT-11 | Git conventions / release-it |
+| MKT-12 | Path-aware release (poc parity) `86d3zmcm6` |
+| MKT-13 | Client `/changelog` What’s new `86d3zmvye` |
 
 ## Releases
 
-Dry-run (local, needs clean tree):
+Path-aware bumps (same model as poc-plattform-kit): each `@singleton-sd/*`
+package versions independently from conventional commits on its watch paths.
+On `main`, `.github/workflows/release.yml` runs `pnpm release:ci`, writes the
+root bump index + marketing product changelog / JSON, tags
+`@scope/name@version`, then dispatches deploys.
+
+Public **What’s new** page: `/changelog` (see `docs/client-changelog.md`).
+
+Dry-run (local):
 
 ```powershell
 pnpm release
+pnpm changelog:test
+pnpm changelog:check
 ```
 
-Ship a version (tag + CHANGELOG + GitHub Release):
+CI / real release (bots only — pushes to `main`):
 
 ```powershell
-$env:GITHUB_TOKEN = (gh auth token)
 pnpm release:ci
 ```
-
-Or Actions → **Release Marketing** (`dry_run` toggle).
