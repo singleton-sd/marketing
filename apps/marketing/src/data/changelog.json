@@ -2,6 +2,17 @@
   "product": "@singleton-sd/marketing",
   "releases": [
     {
+      "version": "0.4.0",
+      "date": "2026-08-10",
+      "changes": [
+        {
+          "type": "New",
+          "summary": "Add company logo to site and Decap admin",
+          "reason": "Replace text brand marks with CDN circle logos on the"
+        }
+      ]
+    },
+    {
       "version": "0.3.0",
       "date": "2026-08-10",
       "changes": [

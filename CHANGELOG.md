@@ -2,6 +2,9 @@
 
 ## 2026-08-10
 
+- **[@singleton-sd/marketing](apps/marketing/CHANGELOG.md)** `0.3.0` → `0.4.0` (minor)
+## 2026-08-10
+
 - **[@singleton-sd/marketing](apps/marketing/CHANGELOG.md)** `0.2.0` → `0.3.0` (minor)
 ## 2026-08-10
 

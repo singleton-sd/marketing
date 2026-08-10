@@ -2,6 +2,14 @@
 
 Release history for **@singleton-sd/marketing**, generated from conventional commits by the release workflow.
 
+## 0.4.0 — 2026-08-10
+
+### New
+
+- Add company logo to site and Decap admin
+
+  Replace text brand marks with CDN circle logos on the
+
 ## 0.3.0 — 2026-08-10
 
 ### New
