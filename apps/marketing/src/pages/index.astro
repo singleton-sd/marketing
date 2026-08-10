@@ -8,6 +8,7 @@ import DeliverySchematic from '../components/marketing/DeliverySchematic.astro';
 import CtaBanner from '../components/marketing/CtaBanner.astro';
 import { getEntry } from 'astro:content';
 import { appCta } from '../lib/nav';
+import { LOGO_LIGHT } from '../lib/site';
 import type { FeatureItem } from '../lib/marketing-types';
 
 const home = await getEntry('pages', 'home');
@@ -50,6 +51,7 @@ const primaryHref = ctaUrl ?? appCta.href;
 <BaseLayout title={title} description={description} ogImage={ogImage}>
   <Hero
     eyebrow={brand ?? 'Singleton Software Development'}
+    brandLogo={LOGO_LIGHT}
     headline={headline ?? 'Software that ships with clarity.'}
     primaryCta={{
       label: ctaLabel ?? 'Book a Software Discovery Call',

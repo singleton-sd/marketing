@@ -2,6 +2,7 @@
 import Button from '../ui/Button.astro';
 import Icon from '../ui/Icon.astro';
 import { appCta, primaryNav } from '../../lib/nav';
+import { LOGO_LIGHT, SITE_NAME } from '../../lib/site';
 
 interface Props {
   currentPath?: string;
@@ -23,9 +24,20 @@ function isActive(href: string) {
 
 <header class="sticky top-0 z-40 border-b border-border bg-bg">
   <div class="mx-auto flex h-14 max-w-content items-center justify-between px-5 md:h-16 md:px-10">
-    <a href="/" class="flex items-center gap-2 text-body-sm no-underline">
-      <span class="font-bold text-fg">{brand}</span>
-      <span class="size-1.5 rounded-full bg-accent" aria-hidden="true"></span>
+    <a
+      href="/"
+      class="flex items-center gap-2.5 text-body-sm no-underline"
+      aria-label={`${SITE_NAME} — home`}
+    >
+      <img
+        src={LOGO_LIGHT}
+        alt=""
+        width="36"
+        height="36"
+        class="size-8 shrink-0 md:size-9"
+        decoding="async"
+      />
+      <span class="sr-only">{brand}</span>
       <span class="hidden text-caption text-fg-muted sm:inline">{tagline}</span>
     </a>
 
@@ -81,7 +93,21 @@ function isActive(href: string) {
     <div class="flex h-full flex-col justify-between p-6">
       <div class="flex flex-col gap-8">
         <div class="flex items-center justify-between">
-          <a href="/" class="font-bold text-fg no-underline">{brand}</a>
+          <a
+            href="/"
+            class="flex items-center gap-2.5 no-underline"
+            aria-label={`${SITE_NAME} — home`}
+          >
+            <img
+              src={LOGO_LIGHT}
+              alt=""
+              width="36"
+              height="36"
+              class="size-9 shrink-0"
+              decoding="async"
+            />
+            <span class="sr-only">{brand}</span>
+          </a>
           <button
             type="button"
             class="inline-flex size-10 items-center justify-center rounded-md text-fg"

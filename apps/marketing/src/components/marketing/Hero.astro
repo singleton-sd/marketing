@@ -4,6 +4,8 @@ import PageContainer from '../shell/PageContainer.astro';
 
 interface Props {
   eyebrow?: string;
+  /** When set, replaces the text eyebrow with a centered brand mark. */
+  brandLogo?: string;
   headline: string;
   subheadline?: string;
   primaryCta?: { label: string; href: string };
@@ -13,6 +15,7 @@ interface Props {
 
 const {
   eyebrow,
+  brandLogo,
   headline,
   subheadline,
   primaryCta,
@@ -24,7 +27,16 @@ const {
 <section class:list={['bg-bg-hero', className]}>
   <PageContainer class="flex flex-col items-center px-5 py-16 text-center md:py-24 lg:py-[7.5rem]">
     {
-      eyebrow ? (
+      brandLogo ? (
+        <img
+          src={brandLogo}
+          alt={eyebrow ?? ''}
+          width="72"
+          height="72"
+          class="mb-6 size-14 md:size-[4.5rem]"
+          decoding="async"
+        />
+      ) : eyebrow ? (
         <p class="m-0 mb-6 text-body-sm font-bold uppercase tracking-wide text-accent">
           {eyebrow}
         </p>

@@ -1,6 +1,7 @@
 ---
 import Icon from '../ui/Icon.astro';
 import { footerColumns } from '../../lib/nav';
+import { LOGO_DARK, SITE_NAME } from '../../lib/site';
 
 interface Props {
   brand?: string;
@@ -19,10 +20,17 @@ const year = new Date().getFullYear();
   <div class="mx-auto max-w-content px-5 py-12 md:px-10 md:py-16">
     <div class="flex flex-col gap-12 lg:flex-row lg:justify-between">
       <div class="max-w-xs space-y-4">
-        <div class="flex items-center gap-2">
-          <span class="text-body-sm font-bold text-accent">{brand}</span>
-          <span class="size-1.5 rounded-full bg-accent" aria-hidden="true"></span>
-        </div>
+        <a href="/" class="inline-flex items-center gap-2.5 no-underline" aria-label={SITE_NAME}>
+          <img
+            src={LOGO_DARK}
+            alt=""
+            width="32"
+            height="32"
+            class="size-8 shrink-0"
+            decoding="async"
+          />
+          <span class="sr-only">{brand}</span>
+        </a>
         <p class="m-0 text-caption text-fg-subtle">{blurb}</p>
       </div>
 
