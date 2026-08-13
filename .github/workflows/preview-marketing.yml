@@ -7,6 +7,8 @@ on:
     paths:
       - 'apps/marketing/**'
       - 'scripts/validate-staticwebapp-config.mjs'
+      - '.npmrc'
+      - 'pnpm-lock.yaml'
       - '.github/workflows/preview-marketing.yml'
 
 concurrency:

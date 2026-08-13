@@ -9,6 +9,8 @@
 
 ## Local
 
+`@singleton-sd/tokens` comes from GitLab’s npm registry (see `.npmrc`).
+
 ```powershell
 pnpm install
 pnpm dev

@@ -1,46 +1,47 @@
 /** @type {import('tailwindcss').Config} */
-// Colors map to Singleton SD design token CSS variables — never hardcode palette hex.
+// Product utility names (fg/bg/accent) map to @singleton-sd/tokens --ssd-* vars.
 export default {
   content: ['./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}'],
   theme: {
     extend: {
       colors: {
         fg: {
-          DEFAULT: 'var(--fg-default)',
-          muted: 'var(--fg-muted)',
-          subtle: 'var(--fg-subtle)',
-          inverse: 'var(--fg-inverse)',
-          brand: 'var(--fg-brand)',
+          DEFAULT: 'var(--ssd-color-text-default)',
+          muted: 'var(--ssd-color-text-muted)',
+          subtle: 'var(--ssd-color-text-subtle)',
+          inverse: 'var(--ssd-color-text-inverse)',
+          brand: 'var(--ssd-color-text-brand)',
         },
         bg: {
-          DEFAULT: 'var(--bg-default)',
-          muted: 'var(--bg-muted)',
-          subtle: 'var(--bg-subtle)',
-          inverse: 'var(--bg-inverse)',
-          hero: 'var(--bg-hero)',
+          DEFAULT: 'var(--ssd-color-background-default)',
+          muted: 'var(--ssd-color-background-muted)',
+          subtle: 'var(--ssd-color-background-subtle)',
+          inverse: 'var(--ssd-color-background-inverse)',
+          hero: 'var(--mkt-color-background-hero)',
+          elevated: 'var(--ssd-color-background-subtle)',
         },
         accent: {
-          DEFAULT: 'var(--accent-default)',
-          hover: 'var(--accent-hover)',
-          muted: 'var(--accent-muted)',
-          on: 'var(--accent-on-accent)',
-          bg: 'var(--accent-bg)',
+          DEFAULT: 'var(--ssd-color-background-brand)',
+          hover: 'var(--ssd-color-background-brand-hovered)',
+          muted: 'var(--mkt-color-background-brand-muted)',
+          on: 'var(--ssd-color-text-on-brand)',
+          bg: 'var(--mkt-color-background-brand-muted)',
         },
         border: {
-          DEFAULT: 'var(--border-default)',
-          muted: 'var(--border-muted)',
-          strong: 'var(--border-strong)',
+          DEFAULT: 'var(--ssd-color-border-default)',
+          muted: 'var(--ssd-color-border-muted)',
+          strong: 'var(--ssd-color-border-strong)',
         },
         status: {
-          error: 'var(--status-error)',
-          'error-bg': 'var(--status-error-bg)',
-          success: 'var(--status-success)',
-          'success-bg': 'var(--status-success-bg)',
+          error: 'var(--ssd-color-feedback-danger-text)',
+          'error-bg': 'var(--ssd-color-feedback-danger-background)',
+          success: 'var(--ssd-color-feedback-success-text)',
+          'success-bg': 'var(--ssd-color-feedback-success-background)',
         },
       },
       fontFamily: {
-        heading: 'var(--font-families-heading)',
-        body: 'var(--font-families-body)',
+        heading: 'var(--ssd-font-family-heading)',
+        body: 'var(--ssd-font-family-body)',
       },
       fontSize: {
         display: ['4.5rem', { lineHeight: '1', letterSpacing: '-0.02em', fontWeight: '500' }],
@@ -60,15 +61,15 @@ export default {
         xxl: '8rem',
       },
       borderRadius: {
-        sm: '0.25rem',
-        md: '0.5rem',
-        lg: '0.75rem',
-        xl: '1rem',
+        sm: 'var(--ssd-radius-sm)',
+        md: 'var(--ssd-radius-md)',
+        lg: 'var(--ssd-radius-lg)',
+        xl: 'var(--ssd-radius-xl)',
       },
       boxShadow: {
-        sm: 'var(--shadow-sm)',
-        md: 'var(--shadow-md)',
-        lg: 'var(--shadow-lg)',
+        sm: 'var(--mkt-shadow-sm)',
+        md: 'var(--mkt-shadow-md)',
+        lg: 'var(--mkt-shadow-lg)',
       },
       maxWidth: {
         content: '68.5rem', // 1096px — Figma 12-col content width

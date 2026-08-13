@@ -4,7 +4,7 @@ Public landing site for **Singleton Software Development** at [singletonsd.com](
 
 ## Stack
 
-- Astro SSG + Tailwind + Singleton SD design tokens
+- Astro SSG + Tailwind + `@singleton-sd/tokens` (GitLab npm, `--ssd-*`)
 - Decap CMS at `/admin` (GitHub backend)
 - Azure Static Web Apps Free + Decap OAuth Azure Function
 - Shared Key Vault in `rg-ssd-global`
