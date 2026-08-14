@@ -2,6 +2,14 @@
 
 Release history for **@singleton-sd/marketing**, generated from conventional commits by the release workflow.
 
+## 0.4.1 — 2026-08-14
+
+### Fixed
+
+- consume tokens from npm
+
+  The CDN --fg/--colors contract broke. Point Tailwind at
+
 ## 0.4.0 — 2026-08-10
 
 ### New
