@@ -16,3 +16,4 @@ coverage/
 .idea/
 .vscode/
 !.vscode/extensions.json
+apps/marketing/public/admin/vendor/

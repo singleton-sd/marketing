@@ -1,111 +1,36 @@
-/* Singleton SD design tokens — canonical source, not vendored/hardcoded.
-   Both themes imported; active theme via [data-theme] on <html>.
-   Product semantic roles map Figma foundations (bg/fg/accent/border/status). */
-@import url('https://tokens.design.singletonsd.com/css/light/_variables.css');
-@import url('https://tokens.design.singletonsd.com/css/dark/_variables.css');
+/* Singleton SD design tokens from @singleton-sd/tokens (npm, not CDN).
+   Both themes; active theme via [data-theme] on <html>. */
+@import '@singleton-sd/tokens/css/light';
+@import '@singleton-sd/tokens/css/dark';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-[data-theme='light'] {
-  --pk-bg: var(--colors-white, var(--colors-gray-100));
-  --pk-fg: var(--colors-gray-900);
-  --pk-muted: var(--colors-gray-600);
-  --pk-subtle: var(--colors-gray-400);
-  --pk-accent: var(--colors-yellow-light-600);
-  --pk-accent-hover: var(--colors-yellow-light-700);
-  --pk-accent-muted: var(--colors-yellow-light-300);
-  --pk-accent-on: var(--colors-gray-900);
-  --pk-accent-tint: var(--colors-yellow-light-100);
-  --pk-border: var(--colors-gray-300);
-  --pk-border-muted: var(--colors-gray-200);
-  --pk-border-strong: var(--colors-gray-400);
-  --pk-inverse: var(--colors-gray-900);
-  --pk-error: var(--colors-red-600);
-  --pk-error-bg: var(--colors-red-100);
-  --pk-success: var(--colors-green-600);
-  --pk-success-bg: var(--colors-green-100);
-
-  --fg-default: var(--pk-fg);
-  --fg-muted: var(--pk-muted);
-  --fg-subtle: var(--pk-subtle);
-  --fg-inverse: var(--colors-white, var(--colors-gray-100));
-  --fg-brand: var(--pk-accent);
-  --bg-default: var(--pk-bg);
-  --bg-muted: var(--colors-gray-100);
-  --bg-subtle: var(--colors-gray-200);
-  --bg-inverse: var(--pk-inverse);
-  --bg-hero: var(--pk-accent-tint);
-  --accent-default: var(--pk-accent);
-  --accent-hover: var(--pk-accent-hover);
-  --accent-muted: var(--pk-accent-muted);
-  --accent-on-accent: var(--pk-accent-on);
-  --accent-bg: var(--pk-accent-tint);
-  --border-default: var(--pk-border);
-  --border-muted: var(--pk-border-muted);
-  --border-strong: var(--pk-border-strong);
-  --status-error: var(--pk-error);
-  --status-error-bg: var(--pk-error-bg);
-  --status-success: var(--pk-success);
-  --status-success-bg: var(--pk-success-bg);
-  --shadow-sm: 0 2px 4px color-mix(in srgb, var(--pk-fg) 10%, transparent);
-  --shadow-md: 0 4px 8px color-mix(in srgb, var(--pk-fg) 12%, transparent);
-  --shadow-lg: 0 12px 24px color-mix(in srgb, var(--pk-fg) 15%, transparent);
-}
-
+/*
+ * Local product aliases the token package does not publish:
+ * - hero / brand-muted: page wash (FOUNDATIONS: no hero token; brand at lower emphasis)
+ * - shadows: package CSS currently emits invalid `dropShadow …` values
+ */
+[data-theme='light'],
 [data-theme='dark'] {
-  --pk-bg: var(--colors-gray-900);
-  --pk-fg: var(--colors-gray-100);
-  --pk-muted: var(--colors-gray-400);
-  --pk-subtle: var(--colors-gray-600);
-  --pk-accent: var(--colors-yellow-light-400);
-  --pk-accent-hover: var(--colors-yellow-light-300);
-  --pk-accent-muted: var(--colors-yellow-light-700);
-  --pk-accent-on: var(--colors-gray-900);
-  --pk-accent-tint: var(--colors-yellow-light-900);
-  --pk-border: var(--colors-gray-700);
-  --pk-border-muted: var(--colors-gray-800);
-  --pk-border-strong: var(--colors-gray-500);
-  --pk-inverse: var(--colors-gray-100);
-  --pk-error: var(--colors-red-400);
-  --pk-error-bg: var(--colors-red-900);
-  --pk-success: var(--colors-green-400);
-  --pk-success-bg: var(--colors-green-900);
-
-  --fg-default: var(--pk-fg);
-  --fg-muted: var(--pk-muted);
-  --fg-subtle: var(--pk-subtle);
-  --fg-inverse: var(--colors-gray-900);
-  --fg-brand: var(--pk-accent);
-  --bg-default: var(--pk-bg);
-  --bg-muted: var(--colors-gray-800);
-  --bg-subtle: var(--colors-gray-700);
-  --bg-inverse: var(--colors-gray-100);
-  --bg-hero: var(--pk-accent-tint);
-  --accent-default: var(--pk-accent);
-  --accent-hover: var(--pk-accent-hover);
-  --accent-muted: var(--pk-accent-muted);
-  --accent-on-accent: var(--pk-accent-on);
-  --accent-bg: var(--pk-accent-tint);
-  --border-default: var(--pk-border);
-  --border-muted: var(--pk-border-muted);
-  --border-strong: var(--pk-border-strong);
-  --status-error: var(--pk-error);
-  --status-error-bg: var(--pk-error-bg);
-  --status-success: var(--pk-success);
-  --status-success-bg: var(--pk-success-bg);
-  --shadow-sm: 0 2px 4px color-mix(in srgb, var(--colors-gray-900) 45%, transparent);
-  --shadow-md: 0 4px 8px color-mix(in srgb, var(--colors-gray-900) 50%, transparent);
-  --shadow-lg: 0 12px 24px color-mix(in srgb, var(--colors-gray-900) 55%, transparent);
+  --mkt-color-background-brand-muted: color-mix(
+    in srgb,
+    var(--ssd-color-background-brand) 16%,
+    var(--ssd-color-background-default)
+  );
+  --mkt-color-background-hero: var(--mkt-color-background-brand-muted);
+  --mkt-shadow-sm: 0 1px 2px color-mix(in srgb, var(--ssd-color-gray-900) 12%, transparent);
+  --mkt-shadow-md: 0 4px 8px color-mix(in srgb, var(--ssd-color-gray-900) 16%, transparent);
+  --mkt-shadow-lg: 0 12px 24px color-mix(in srgb, var(--ssd-color-gray-900) 20%, transparent);
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: var(--font-families-body), ui-sans-serif, system-ui, sans-serif;
-  background-color: var(--bg-default);
-  color: var(--fg-default);
+  font-family: var(--ssd-font-family-body), ui-sans-serif, system-ui, sans-serif;
+  background-color: var(--ssd-color-background-default);
+  color: var(--ssd-color-text-default);
 }
 
 .prose-legal h2 {

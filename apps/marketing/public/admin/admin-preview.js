@@ -14,8 +14,8 @@
   CMS.registerPreviewStyle('/admin/preview.css');
 
   /**
-   * Token CSS is gated on [data-theme='dark']. Decap preview iframes omit it,
-   * so stamp the attribute whenever a preview frame mounts.
+   * Preview CSS uses root/dark tokens on :root. Stamp data-theme anyway so
+   * any [data-theme='dark'] sheets in the iframe still apply.
    */
   function stampPreviewTheme() {
     const frames = document.querySelectorAll('iframe');
