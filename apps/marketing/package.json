@@ -9,7 +9,8 @@
     "build": "node ../../scripts/validate-staticwebapp-config.mjs public/staticwebapp.config.json && node ./scripts/copy-token-css.mjs && astro build",
     "preview": "astro preview",
     "lint": "node ../../scripts/validate-staticwebapp-config.mjs public/staticwebapp.config.json && astro check",
-    "test": "node --test ../../scripts/validate-staticwebapp-config.test.mjs src/lib/site.test.mjs && node ../../scripts/validate-staticwebapp-config.mjs public/staticwebapp.config.json && astro check"
+    "test": "node --test ../../scripts/validate-staticwebapp-config.test.mjs src/lib/site.test.mjs scripts/smoke-tokens.test.mjs && node ../../scripts/validate-staticwebapp-config.mjs public/staticwebapp.config.json && astro check",
+    "test:smoke": "node ./scripts/smoke-tokens.mjs"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.4",
