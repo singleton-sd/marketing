@@ -41,6 +41,9 @@ jobs:
       - name: Build marketing
         run: pnpm --filter @singleton-sd/marketing... run build
 
+      - name: Smoke marketing tokens
+        run: pnpm --filter @singleton-sd/marketing run test:smoke
+
       - name: Validate SWA config (dist)
         run: node scripts/validate-staticwebapp-config.mjs apps/marketing/dist/staticwebapp.config.json
 
