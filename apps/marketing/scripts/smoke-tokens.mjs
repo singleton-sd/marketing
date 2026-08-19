@@ -23,14 +23,16 @@ export const REQUIRED_SSD_VARS = [
 ];
 
 const TOKEN_CDN = 'tokens.design.singletonsd.com';
-const LEGACY_FG = '--fg-';
+/** Matches --fg-* only when used as a CSS custom property (var() or declaration). */
+const LEGACY_FG_RE = /(?:var\s*\(|(?:^|[{;,\s]))(--fg-)/m;
 
 /**
  * @param {string} root
  * @param {(filePath: string) => boolean} predicate
+ * @param {string[]} [diagnostics] - receives unreadable-directory warnings
  * @returns {string[]}
  */
-export function listFiles(root, predicate) {
+export function listFiles(root, predicate, diagnostics) {
   /** @type {string[]} */
   const found = [];
 
@@ -41,7 +43,13 @@ export function listFiles(root, predicate) {
     let entries;
     try {
       entries = readdirSync(dir, { withFileTypes: true });
-    } catch {
+    } catch (err) {
+      const msg = `Could not read directory ${dir}: ${err instanceof Error ? err.message : err}`;
+      if (diagnostics) {
+        diagnostics.push(msg);
+      } else {
+        console.warn(`[smoke-tokens] ${msg}`);
+      }
       return;
     }
     for (const entry of entries) {
@@ -95,7 +103,7 @@ export function missingRequiredSsdVars(css, requiredVars = REQUIRED_SSD_VARS) {
  * @returns {boolean}
  */
 export function cssHasLegacyFgVars(css) {
-  return css.includes(LEGACY_FG);
+  return LEGACY_FG_RE.test(css);
 }
 
 /**
@@ -139,8 +147,8 @@ export function smokeMarketingTokens(distDir) {
   /** @type {string[]} */
   const errors = [];
 
-  const cssFiles = listFiles(dist, (filePath) => filePath.endsWith('.css'));
-  const htmlFiles = listFiles(dist, (filePath) => filePath.endsWith('.html'));
+  const cssFiles = listFiles(dist, (filePath) => filePath.endsWith('.css'), errors);
+  const htmlFiles = listFiles(dist, (filePath) => filePath.endsWith('.html'), errors);
 
   if (cssFiles.length === 0) {
     errors.push(`No CSS files under ${dist}.`);
@@ -164,7 +172,7 @@ export function smokeMarketingTokens(distDir) {
     const css = readFileSync(filePath, 'utf8');
     if (cssHasLegacyFgVars(css)) {
       errors.push(
-        `${distRelative(filePath, dist)} contains legacy ${LEGACY_FG} custom properties.`,
+        `${distRelative(filePath, dist)} contains legacy --fg- custom properties.`,
       );
     }
   }
