@@ -2,6 +2,21 @@
   "product": "@singleton-sd/marketing",
   "releases": [
     {
+      "version": "0.5.0",
+      "date": "2026-08-19",
+      "changes": [
+        {
+          "type": "New",
+          "summary": "Add marketing token build smoke",
+          "reason": "Fail CI when Astro dist still uses --fg-* vars"
+        },
+        {
+          "type": "Fixed",
+          "summary": "Tighten cssHasLegacyFgVars regex and surface listFiles errors"
+        }
+      ]
+    },
+    {
       "version": "0.4.1",
       "date": "2026-08-14",
       "changes": [

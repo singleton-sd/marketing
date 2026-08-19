@@ -2,6 +2,18 @@
 
 Release history for **@singleton-sd/marketing**, generated from conventional commits by the release workflow.
 
+## 0.5.0 — 2026-08-19
+
+### New
+
+- Add marketing token build smoke
+
+  Fail CI when Astro dist still uses --fg-* vars
+
+### Fixed
+
+- Tighten cssHasLegacyFgVars regex and surface listFiles errors
+
 ## 0.4.1 — 2026-08-14
 
 ### Fixed
