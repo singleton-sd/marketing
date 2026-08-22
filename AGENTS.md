@@ -18,7 +18,7 @@ ClickUp tickets must include `[repo=singleton-sd/marketing]`.
 | --- | --- |
 | Site | Astro SSG (`apps/marketing`) |
 | CMS | Decap at `/admin` (GitHub backend) |
-| OAuth | Azure Function `ssd-mkt-decap-oauth-prod-ae` |
+| OAuth | Shared `cms-oauth-kit` at `https://auth.singletonsd.com` |
 | Host | Azure SWA Free `ssd-mkt-prod-ae` (`www.singletonsd.com`) |
 | Secrets | Shared KV `ssd-global-kv-prod-ae` in `rg-ssd-global` |
 | Assets CDN | `assets.singletonsd.com` (favicons/OG — link only, no binaries in repo) |
@@ -43,7 +43,6 @@ detached/behind). Do not rely on a dirty or stale worktree.
 pnpm install
 pnpm dev
 pnpm --filter @singleton-sd/marketing build
-pnpm --filter @singleton-sd/marketing-oauth test
 pnpm release          # dry-run path-aware package bumps
 pnpm release:ci       # bump, CHANGELOG, commit, tag, push (CI only)
 pnpm changelog:test   # client-facing changelog unit tests
@@ -64,4 +63,8 @@ pnpm changelog:check  # MD ↔ JSON projection drift check
 
 Branch names: `feature/MKT-<n>-slug`, `hotfix/MKT-<n>-slug`, `release/vX.Y.Z`, or `main`.
 
-Package tags: `@singleton-sd/marketing@x.y.z`, `@singleton-sd/marketing-oauth@x.y.z`.
+Package tags: `@singleton-sd/marketing@x.y.z`.
+
+Decap `/admin` login uses `singleton-sd/cms-oauth-kit` (`https://auth.singletonsd.com`).
+Shared `ORIGINS` already covers `*.singletonsd.com`, apex, and `localhost:4321`.
+Add origins or deploy OAuth only in that repo — not here.

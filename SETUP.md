@@ -5,7 +5,7 @@
 - Node 20+ / pnpm 9.15
 - Azure CLI logged into subscription `01c0bb8b-3770-4765-979a-cb13ae7e3dd2`
 - AWS CLI (Route53 for `singletonsd.com`)
-- GitHub OAuth App for Decap (see `docs/marketing-astro-decap.md`)
+- Decap `/admin` login uses shared `cms-oauth-kit` (see `docs/marketing-astro-decap.md`)
 
 ## Local
 
@@ -15,7 +15,7 @@
 pnpm install
 pnpm dev
 # http://localhost:4321
-# Admin: http://localhost:4321/admin (needs OAuth Function + ORIGINS including localhost:4321)
+# Admin: http://localhost:4321/admin (shared OAuth at https://auth.singletonsd.com; ORIGINS includes localhost:4321)
 ```
 
 ## Azure resources
@@ -26,17 +26,17 @@ pnpm dev
 | Global Key Vault | `ssd-global-kv-prod-ae` |
 | Marketing RG | `rg-ssd-marketing` |
 | SWA | `ssd-mkt-prod-ae` |
-| Decap OAuth Function | `ssd-mkt-decap-oauth-prod-ae` |
+| Decap OAuth | `https://auth.singletonsd.com` (`singleton-sd/cms-oauth-kit` in `rg-ssd-global`) |
 
 ### Secrets in global KV (tagged `repo=singleton-sd/marketing`)
 
 - `swa-marketing-deployment-token`
-- `github-decap-oauth-client-secret`
+
+`github-decap-oauth-client-secret` stays in the same vault for `cms-oauth-kit`. Do not manage OAuth client id/secret or `ORIGINS` from this repo.
 
 ### GitHub Variables (IDs only)
 
 - `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`
-- `DECAP_OAUTH_CLIENT_ID`
 
 Entra app `ssd-mkt-gha-oidc-prod` federated subjects must include both classic and ID-form claims (GitHub may emit either):
 
@@ -51,8 +51,7 @@ Entra app `ssd-mkt-gha-oidc-prod` federated subjects must include both classic a
 az account set --subscription 01c0bb8b-3770-4765-979a-cb13ae7e3dd2
 az deployment group create -g rg-ssd-global -f infra/global.bicep
 az deployment group create -g rg-ssd-marketing -f infra/marketing.bicep
-# After OAuth App + KV secret:
-pwsh ./scripts/deploy-decap-oauth.ps1 -OauthClientId '<id>'
+# OAuth Function lives in singleton-sd/cms-oauth-kit (not this repo).
 pwsh ./scripts/deploy-swa-from-kv.ps1 -ConfigPath ./infra/custom-domains.marketing.json -DeployName marketing
 ```
 

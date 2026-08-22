@@ -151,9 +151,6 @@ function watchPathsFor(pkg) {
   if (pkg.name === '@singleton-sd/marketing') {
     paths.push('infra/marketing.bicep', 'infra/global.bicep');
   }
-  if (pkg.name === '@singleton-sd/marketing-oauth') {
-    paths.push('infra/decap-oauth.bicep', 'scripts/deploy-decap-oauth.ps1');
-  }
 
   return paths;
 }
