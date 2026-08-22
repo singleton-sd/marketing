@@ -7,13 +7,14 @@ Parent ClickUp: https://app.clickup.com/t/86d3zhkz4
 
 ## Done
 
-- Repo `singleton-sd/marketing` with Astro + Decap + OAuth Function code
+- Repo `singleton-sd/marketing` with Astro + Decap
 - Content retargeted to Singleton Software Development + Discovery Call CTA
 - `rg-ssd-global` / `ssd-global-kv-prod-ae` (shared KV)
-- `rg-ssd-marketing` / SWA `ssd-mkt-prod-ae` + plan `ssd-mkt-plan-prod-ae`
+- `rg-ssd-marketing` / SWA `ssd-mkt-prod-ae`
 - GHA OIDC app `ssd-mkt-gha-oidc-prod` + Variables + ID-form federated credentials
 - Production SWA deploy via Actions succeeding
-- Workflows: `deploy-marketing.yml`, `preview-marketing.yml`, `deploy-decap-oauth.yml`
+- Workflows: `deploy-marketing.yml`, `preview-marketing.yml`
+- Decap `/admin` OAuth: shared `cms-oauth-kit` at `https://auth.singletonsd.com`
 
 ## Blocked on you (interactive)
 
@@ -33,15 +34,12 @@ ClickUp: https://app.clickup.com/t/86d3zhkzt
 
 ### 2. GitHub OAuth App (Decap `/admin`)
 
-Create OAuth App (UI only): https://github.com/settings/developers
+Shared org app (do not create a second callback on this repo):
 
+- App: [Singleton SD CMS OAuth](https://github.com/settings/applications/3783537)
 - Homepage URL: `https://singletonsd.com`
-- Authorization callback URL: `https://ssd-mkt-decap-oauth-prod-ae.azurewebsites.net/callback`
+- Authorization callback URL: `https://auth.singletonsd.com/callback`
 
-```powershell
-powershell -File ./scripts/bootstrap-decap-oauth.ps1 -ClientId '<id>' -ClientSecret '<secret>'
-# Saves to global KV: client-id, client-secret, and app-config JSON (name/homepage/callback)
-powershell -File ./scripts/deploy-decap-oauth.ps1 -OauthClientId '<id>'
-```
+OAuth Function code, Bicep, and deploy live in [`singleton-sd/cms-oauth-kit`](https://github.com/singleton-sd/cms-oauth-kit). This site’s `config.yml` `base_url` is `https://auth.singletonsd.com`.
 
 ClickUp: https://app.clickup.com/t/86d3zhkzr

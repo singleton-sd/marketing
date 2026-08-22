@@ -1,10 +1,10 @@
 # Decap CMS — git-backed editor for company marketing Markdown.
-# Auth: GitHub backend via Azure Function OAuth proxy.
+# Auth: shared cms-oauth-kit (https://auth.singletonsd.com). Do not add origins here.
 backend:
   name: github
   repo: singleton-sd/marketing
   branch: main
-  base_url: https://ssd-mkt-decap-oauth-prod-ae.azurewebsites.net
+  base_url: https://auth.singletonsd.com
   auth_endpoint: auth
 
 publish_mode: simple

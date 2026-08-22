@@ -12,35 +12,33 @@ Locked stack for `singletonsd.com` (Azure SWA Free `ssd-mkt-prod-ae`).
 | Styling | Tailwind 3 + Singleton SD design tokens |
 | Content | Markdown under `apps/marketing/src/content/pages/` |
 | CMS | Decap at `/admin` |
-| OAuth | Function `ssd-mkt-decap-oauth-prod-ae` |
+| OAuth | Shared `cms-oauth-kit` at `https://auth.singletonsd.com` |
 | Secrets | Global KV `ssd-global-kv-prod-ae` |
 
-## Decap bootstrap
+## Decap `/admin` auth
 
-1. GitHub → OAuth Apps → New:
-   - Application name: `Singleton SD Marketing Decap`
-   - Homepage: `https://singletonsd.com`
-   - Callback: `https://ssd-mkt-decap-oauth-prod-ae.azurewebsites.net/callback`
-2. Store id + secret + form metadata in global KV (and GitHub Variable):
+GitHub backend via the org OAuth proxy. Consumer `config.yml` (already set):
 
-```powershell
-powershell -File ./scripts/bootstrap-decap-oauth.ps1 -ClientId '<id>' -ClientSecret '<secret>'
+```yaml
+backend:
+  name: github
+  repo: singleton-sd/marketing
+  branch: main
+  base_url: https://auth.singletonsd.com
+  auth_endpoint: auth
 ```
 
-| KV secret | Purpose |
+| Item | Value |
 | --- | --- |
-| `github-decap-oauth-client-id` | Client id (also `DECAP_OAUTH_CLIENT_ID` Variable) |
-| `github-decap-oauth-client-secret` | Client secret (Function App Key Vault ref) |
-| `github-decap-oauth-app-config` | JSON with name / homepage / callback for reuse |
+| Shared repo | [`singleton-sd/cms-oauth-kit`](https://github.com/singleton-sd/cms-oauth-kit) |
+| Public origin | `https://auth.singletonsd.com` |
+| Callback | `https://auth.singletonsd.com/callback` |
+| GitHub OAuth App | [Singleton SD CMS OAuth](https://github.com/settings/applications/3783537) |
 
-All tagged `project=marketing`, `repo=singleton-sd/marketing`, `component=decap-oauth`.
+Shared `ORIGINS` already includes `*.singletonsd.com`, apex `singletonsd.com`, and `localhost:4321`. Do **not** maintain a second origin list here. Do **not** open `/admin` on a raw `*.azurestaticapps.net` host.
 
-3. Deploy Function: `powershell -File ./scripts/deploy-decap-oauth.ps1 -OauthClientId '<id>'`
+Add origins, rotate the OAuth App, or deploy the Function only in `cms-oauth-kit`. This repo must not recreate `apps/marketing-oauth` or `infra/decap-oauth.bicep`.
 
-Re-read the form values later:
+KV `github-decap-oauth-client-secret` is owned by the shared Function. Do not delete it from this cutover.
 
-```powershell
-az keyvault secret show --vault-name ssd-global-kv-prod-ae --name github-decap-oauth-app-config --query value -o tsv
-```
-
-`ORIGINS` must include `singletonsd.com`, `www.singletonsd.com`, the SWA default/preview prefix pattern, and `localhost:4321`.
+Local: `http://localhost:4321/admin` (production `base_url`; `ORIGINS` already allows that host).
