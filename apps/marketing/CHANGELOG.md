@@ -2,6 +2,14 @@
 
 Release history for **@singleton-sd/marketing**, generated from conventional commits by the release workflow.
 
+## 0.6.0 — 2026-08-22
+
+### New
+
+- point Decap at cms-oauth-kit
+
+  Point Decap /admin at shared cms-oauth-kit
+
 ## 0.5.0 — 2026-08-19
 
 ### New
