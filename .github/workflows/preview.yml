@@ -1,0 +1,222 @@
+# PR preview on GitHub Pages at /pr-preview/pr-<number>/.
+# House pattern: singleton-sd/poc-inkads-marketing `.github/workflows/preview.yml`
+# (without that site's visual-review / PostKit OIDC jobs — this repo has neither).
+#
+# Build runs PR-controlled install/test/build with contents:read and no
+# persisted credentials. Publish/cleanup use a write token but do not execute
+# package scripts from the PR.
+name: Deploy pull request preview
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+
+jobs:
+  build:
+    if: >
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      contains(fromJSON('["opened","reopened","synchronize"]'), github.event.action)
+    runs-on: ubuntu-latest
+    name: Build GitHub Pages preview
+    concurrency:
+      group: preview-build-pr-${{ github.event.number }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 9.15.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests
+        run: pnpm --filter @singleton-sd/marketing run test
+
+      - name: Build preview site
+        run: pnpm --filter @singleton-sd/marketing... run build
+        env:
+          PREVIEW_BASE_PATH: /pr-preview/pr-${{ github.event.number }}/
+
+      - name: Smoke marketing tokens
+        run: pnpm --filter @singleton-sd/marketing run test:smoke
+
+      - name: Check preview asset paths
+        run: node scripts/check-pages-asset-paths.mjs apps/marketing/dist /pr-preview/pr-${{ github.event.number }}/
+
+      - name: Upload preview dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-dist-${{ github.event.number }}
+          path: apps/marketing/dist
+          include-hidden-files: true
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    if: >
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      contains(fromJSON('["opened","reopened","synchronize"]'), github.event.action)
+    runs-on: ubuntu-latest
+    name: Publish GitHub Pages preview
+    concurrency:
+      group: pages-publish
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set preview URLs
+        id: urls
+        run: |
+          echo "preview_url=https://www.singletonsd.com/pr-preview/pr-${{ github.event.number }}/" >> "$GITHUB_OUTPUT"
+
+      - name: Download preview dist
+        uses: actions/download-artifact@v4
+        with:
+          name: preview-dist-${{ github.event.number }}
+          path: apps/marketing/dist
+
+      - name: Deploy preview
+        id: preview
+        continue-on-error: true
+        uses: rossjrw/pr-preview-action@v1.8.1
+        with:
+          source-dir: apps/marketing/dist
+          preview-branch: gh-pages
+          pages-base-url: https://www.singletonsd.com
+          umbrella-dir: pr-preview
+          comment: false
+
+      - name: Retry deploy preview
+        if: steps.preview.outcome == 'failure'
+        uses: rossjrw/pr-preview-action@v1.8.1
+        with:
+          source-dir: apps/marketing/dist
+          preview-branch: gh-pages
+          pages-base-url: https://www.singletonsd.com
+          umbrella-dir: pr-preview
+          comment: false
+
+      - name: Post sticky preview comment
+        id: preview_comment
+        continue-on-error: true
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: marketing-preview
+          recreate: true
+          message: |
+            ## Preview
+
+            🔗 **[Open live preview](${{ steps.urls.outputs.preview_url }})**
+
+            Built with Astro `base` `/pr-preview/pr-${{ github.event.number }}/` and published to the `gh-pages` branch (production files are left in place).
+
+            Preview URLs resolve on `www.singletonsd.com` after the GitHub Pages custom-domain cutover. Fork PRs are not published.
+
+            Do **not** sign in to `/admin` while a preview tab is open — previews share the production origin (GitHub Pages path previews cannot use a separate host without DNS/Pages settings changes).
+
+      - name: Retry sticky preview comment
+        if: steps.preview_comment.outcome == 'failure'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: marketing-preview
+          recreate: true
+          message: |
+            ## Preview
+
+            🔗 **[Open live preview](${{ steps.urls.outputs.preview_url }})**
+
+            Built with Astro `base` `/pr-preview/pr-${{ github.event.number }}/` and published to the `gh-pages` branch (production files are left in place).
+
+            Preview URLs resolve on `www.singletonsd.com` after the GitHub Pages custom-domain cutover. Fork PRs are not published.
+
+            Do **not** sign in to `/admin` while a preview tab is open — previews share the production origin (GitHub Pages path previews cannot use a separate host without DNS/Pages settings changes).
+
+  cleanup:
+    if: >
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    name: Remove GitHub Pages preview
+    concurrency:
+      group: pages-publish
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Confirm pull request is still closed
+        id: pr_state
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const { data } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+            core.setOutput('closed', data.state === 'closed' ? 'true' : 'false');
+            if (data.state !== 'closed') {
+              core.info(`PR is ${data.state}; skipping preview removal.`);
+            }
+
+      - name: Remove preview
+        id: remove_preview
+        if: steps.pr_state.outputs.closed == 'true'
+        continue-on-error: true
+        uses: rossjrw/pr-preview-action@v1.8.1
+        with:
+          action: remove
+          source-dir: apps/marketing/dist
+          preview-branch: gh-pages
+          pages-base-url: https://www.singletonsd.com
+          umbrella-dir: pr-preview
+          comment: false
+
+      - name: Retry remove preview
+        if: steps.pr_state.outputs.closed == 'true' && steps.remove_preview.outcome == 'failure'
+        uses: rossjrw/pr-preview-action@v1.8.1
+        with:
+          action: remove
+          source-dir: apps/marketing/dist
+          preview-branch: gh-pages
+          pages-base-url: https://www.singletonsd.com
+          umbrella-dir: pr-preview
+          comment: false
+
+      - name: Hide sticky preview comment
+        id: hide_comment
+        if: steps.pr_state.outputs.closed == 'true'
+        continue-on-error: true
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: marketing-preview
+          hide: true
+
+      - name: Retry hide sticky preview comment
+        if: steps.pr_state.outputs.closed == 'true' && steps.hide_comment.outcome == 'failure'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: marketing-preview
+          hide: true

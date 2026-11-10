@@ -11,7 +11,8 @@
 (function registerAdminPreview() {
   if (!window.CMS) return;
 
-  CMS.registerPreviewStyle('/admin/preview.css');
+  const adminDir = new URL('./', window.location.href).pathname;
+  CMS.registerPreviewStyle(`${adminDir}preview.css`);
 
   /**
    * Preview CSS uses root/dark tokens on :root. Stamp data-theme anyway so

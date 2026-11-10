@@ -1,6 +1,6 @@
 # Path-aware release: bump workspace package versions on main.
 # Skips when the push is already a release commit (avoids loops).
-# After a bump, explicitly workflow_dispatch deploy workflows —
+# After a bump, explicitly workflow_dispatch pages.yml —
 # GITHUB_TOKEN pushes do not trigger other workflows (GitHub recursion guard).
 name: Release
 
@@ -88,8 +88,8 @@ jobs:
           dispatch=false
           for f in "${files[@]}"; do
             if [ "$f" = 'apps/marketing/package.json' ]; then
-              echo "Dispatching deploy-marketing.yml @ main ($HEAD_SHA)"
-              gh workflow run deploy-marketing.yml --ref main
+              echo "Dispatching pages.yml @ main ($HEAD_SHA)"
+              gh workflow run pages.yml --ref main
               dispatch=true
             fi
           done

@@ -1,6 +1,7 @@
 // Shared Singleton SD Key Vault (org-wide secrets).
 // Deploy into rg-ssd-global.
 // CAF: ssd-global-kv-prod-ae
+// Not used by GitHub Pages hosting. Do not treat this as the marketing deploy.
 
 @description('Azure region')
 param location string = resourceGroup().location

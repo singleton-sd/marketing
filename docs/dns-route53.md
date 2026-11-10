@@ -1,13 +1,8 @@
 # Custom domains — company marketing
 
-DNS stays in **AWS Route53** (`singletonsd.com`). Azure receives CNAMEs / validation TXT and custom-domain bindings.
+DNS stays in **AWS Route 53** (`singletonsd.com`). GitHub Pages is the host.
 
-Config: [`infra/custom-domains.marketing.json`](../infra/custom-domains.marketing.json)
+The infrastructure owner applies records; **do not change DNS from an agent.**
 
-```powershell
-# Fill REPLACE_* placeholders after SWA is created (default hostname + validationId)
-pwsh ./scripts/apply-route53-dns.ps1 -ConfigPath ./infra/custom-domains.marketing.json
-pwsh ./scripts/bind-custom-domains.ps1 -ConfigPath ./infra/custom-domains.marketing.json
-```
-
-Apex (`singletonsd.com`) may require an A/ALIAS record after SWA domain validation — update the JSON from Azure portal / CLI outputs if CNAME-at-apex is rejected.
+Canonical cutover steps (Pages settings, apex A/AAAA, `www` CNAME, then Azure
+SWA deletion last): [`deployment.md`](./deployment.md).

@@ -3,65 +3,34 @@
 ## Prerequisites
 
 - Node 20+ / pnpm 9.15
-- Azure CLI logged into subscription `01c0bb8b-3770-4765-979a-cb13ae7e3dd2`
-- AWS CLI (Route53 for `singletonsd.com`)
 - Decap `/admin` login uses shared `cms-oauth-kit` (see `docs/marketing-astro-decap.md`)
 
 ## Local
 
 `@singleton-sd/tokens` comes from GitLab’s npm registry (see `.npmrc`).
 
-```powershell
+```sh
 pnpm install
 pnpm dev
 # http://localhost:4321
 # Admin: http://localhost:4321/admin (shared OAuth at https://auth.singletonsd.com; ORIGINS includes localhost:4321)
 ```
 
-## Azure resources
+## Hosting
+
+Production is **GitHub Pages** (`www.singletonsd.com`). Agents must not change
+GitHub repo settings, Route 53, or Azure resources. Exact Pages settings, DNS
+records, and Azure SWA deletion order: [`docs/deployment.md`](docs/deployment.md).
 
 | Resource | Name |
 | --- | --- |
-| Global RG | `rg-ssd-global` |
-| Global Key Vault | `ssd-global-kv-prod-ae` |
-| Marketing RG | `rg-ssd-marketing` |
-| SWA | `ssd-mkt-prod-ae` |
-| Decap OAuth | `https://auth.singletonsd.com` (`singleton-sd/cms-oauth-kit` in `rg-ssd-global`) |
+| Pages | `gh-pages` branch, custom domain `www.singletonsd.com` |
+| Decap OAuth | `https://auth.singletonsd.com` (`singleton-sd/cms-oauth-kit`) |
+| Global Key Vault | `ssd-global-kv-prod-ae` in `rg-ssd-global` (OAuth / other apps — not Pages) |
+| Previous SWA | `ssd-mkt-prod-ae` in `rg-ssd-marketing` — delete last after DNS cutover |
 
-### Secrets in global KV (tagged `repo=singleton-sd/marketing`)
-
-- `swa-marketing-deployment-token`
-
-`github-decap-oauth-client-secret` stays in the same vault for `cms-oauth-kit`. Do not manage OAuth client id/secret or `ORIGINS` from this repo.
-
-### GitHub Variables (IDs only)
-
-- `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`
-
-Entra app `ssd-mkt-gha-oidc-prod` federated subjects must include both classic and ID-form claims (GitHub may emit either):
-
-- `repo:singleton-sd/marketing:ref:refs/heads/main`
-- `repo:singleton-sd/marketing:pull_request`
-- `repo:singleton-sd@275041854/marketing@1328843767:ref:refs/heads/main`
-- `repo:singleton-sd@275041854/marketing@1328843767:pull_request`
-
-## Deploy
-
-```powershell
-az account set --subscription 01c0bb8b-3770-4765-979a-cb13ae7e3dd2
-az deployment group create -g rg-ssd-global -f infra/global.bicep
-az deployment group create -g rg-ssd-marketing -f infra/marketing.bicep
-# OAuth Function lives in singleton-sd/cms-oauth-kit (not this repo).
-pwsh ./scripts/deploy-swa-from-kv.ps1 -ConfigPath ./infra/custom-domains.marketing.json -DeployName marketing
-```
-
-## DNS
-
-```powershell
-aws login   # if session expired
-pwsh ./scripts/apply-route53-dns.ps1 -ConfigPath ./infra/custom-domains.marketing.json
-pwsh ./scripts/bind-custom-domains.ps1 -ConfigPath ./infra/custom-domains.marketing.json
-```
+`github-decap-oauth-client-secret` stays in the global vault for `cms-oauth-kit`.
+Do not manage OAuth client id/secret or `ORIGINS` from this repo.
 
 ## Ticket map (initial)
 
@@ -80,13 +49,14 @@ pwsh ./scripts/bind-custom-domains.ps1 -ConfigPath ./infra/custom-domains.market
 | MKT-11 | Git conventions / release-it |
 | MKT-12 | Path-aware release (poc parity) `86d3zmcm6` |
 | MKT-13 | Client `/changelog` What’s new `86d3zmvye` |
+| MKT-16 | GitHub Pages hosting |
 
 ## Domain & assets
 
 | Host | Role |
 | --- | --- |
-| `www.singletonsd.com` | Canonical site (Azure SWA `ssd-mkt-prod-ae`) |
-| `singletonsd.com` (apex) | Existing CloudFront 301 → `https://www.singletonsd.com/` |
+| `www.singletonsd.com` | Canonical site (GitHub Pages) |
+| `singletonsd.com` (apex) | A/AAAA to GitHub Pages IPs; GitHub redirects to www |
 | `assets.singletonsd.com` | Brand CDN — favicons/OG linked from app; do not vendor binaries into this repo |
 
 Canonical origin in Astro/`config.yml`: `https://www.singletonsd.com`.
@@ -97,13 +67,13 @@ Path-aware bumps (same model as poc-plattform-kit): each `@singleton-sd/*`
 package versions independently from conventional commits on its watch paths.
 On `main`, `.github/workflows/release.yml` runs `pnpm release:ci`, writes the
 root bump index + marketing product changelog / JSON, tags
-`@scope/name@version`, then dispatches deploys.
+`@scope/name@version`, then dispatches `pages.yml`.
 
 Public **What’s new** page: `/changelog` (see `docs/client-changelog.md`).
 
 Dry-run (local):
 
-```powershell
+```sh
 pnpm release
 pnpm changelog:test
 pnpm changelog:check
@@ -111,6 +81,6 @@ pnpm changelog:check
 
 CI / real release (bots only — pushes to `main`):
 
-```powershell
+```sh
 pnpm release:ci
 ```

@@ -19,23 +19,25 @@ ClickUp tickets must include `[repo=singleton-sd/marketing]`.
 | Site | Astro SSG (`apps/marketing`) |
 | CMS | Decap at `/admin` (GitHub backend) |
 | OAuth | Shared `cms-oauth-kit` at `https://auth.singletonsd.com` |
-| Host | Azure SWA Free `ssd-mkt-prod-ae` (`www.singletonsd.com`) |
-| Secrets | Shared KV `ssd-global-kv-prod-ae` in `rg-ssd-global` |
+| Host | GitHub Pages (`www.singletonsd.com`, CNAME `singleton-sd.github.io`) |
+| Preview | `/pr-preview/pr-<number>/` on the same custom domain |
 | Assets CDN | `assets.singletonsd.com` (favicons/OG — link only, no binaries in repo) |
-| App RG | `rg-ssd-marketing` |
-| Subscription | `01c0bb8b-3770-4765-979a-cb13ae7e3dd2` (Singleton SD) |
+
+Azure SWA `ssd-mkt-prod-ae` is the previous host. Leave it in place until DNS
+has moved, then delete it last. Do not change DNS, GitHub Pages settings, or
+Azure resources from an agent. See [`docs/deployment.md`](docs/deployment.md).
 
 ## Delivery
 
 - Feature branches: `feature/MKT-<n>-<kebab>` in a worktree when possible
-- Solo agent runs may merge to `main` without PRs; still maintain `preview-marketing.yml` for human PRs
-- Never put secrets in GitHub Secrets — OIDC → Key Vault only
+- Human PRs get Pages previews from `.github/workflows/preview.yml`
+- Never put secrets in GitHub Secrets — hosting uses `GITHUB_TOKEN` only
 
 ## Sources of truth (poc)
 
-When copying patterns from `poc-plattform-kit`, **always** inspect
-`origin/main` after `git fetch origin main` (local checkouts are often
-detached/behind). Do not rely on a dirty or stale worktree.
+When copying patterns from `poc-inkads-marketing` or `poc-plattform-kit`,
+**always** inspect `origin/main` after `git fetch origin main` (local checkouts
+are often detached/behind). Do not rely on a dirty or stale worktree.
 
 ## Commands
 
