@@ -1,6 +1,7 @@
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 import tailwind from '@astrojs/tailwind';
+import { rehypePrefixBase } from './src/lib/with-base.mjs';
 
 const environment = /** @type {Record<string, string | undefined>} */ (
   Reflect.get(globalThis, 'process')?.env ?? {}
@@ -16,6 +17,9 @@ export default defineConfig({
   output: 'static',
   // Match sitemap/canonical URLs (/about/) and GitHub Pages directory output.
   trailingSlash: 'always',
+  markdown: {
+    rehypePlugins: [rehypePrefixBase(base)],
+  },
   integrations: [
     tailwind({
       applyBaseStyles: false,

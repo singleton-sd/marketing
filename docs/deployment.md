@@ -8,9 +8,22 @@ In-repository pull requests run the build gate and publish beneath
 `https://www.singletonsd.com/pr-preview/pr-<number>/`. The preview workflow:
 
 1. Builds Astro with `PREVIEW_BASE_PATH=/pr-preview/pr-<number>/` so CSS, JS,
-   and in-page links resolve under that prefix
-2. Posts a **sticky PR comment** with the live preview link
-3. Removes the preview folder and hides the comment when the PR closes
+   in-page links, and Markdown `href`/`src` resolve under that prefix. The
+   build job uses `contents: read` and `persist-credentials: false`; only the
+   publish job has write access to `gh-pages`.
+2. Posts a **sticky PR comment** with the live preview link (retried once)
+3. Removes the preview folder (`action: remove`) after confirming the PR is
+   still closed, then hides the comment
+
+`pages.yml` (production) and the preview publish/cleanup jobs share the
+`pages-publish` concurrency group with cancellation disabled so `gh-pages`
+writes serialize. Production deploys only from `refs/heads/main`
+(`workflow_dispatch` from another ref is ignored).
+
+Path-based GitHub Pages previews share the `www.singletonsd.com` origin with
+production `/admin`. A separate preview host would need DNS and Pages settings
+changes (out of scope here). Do not keep a Decap session open while reviewing
+a preview.
 
 Pull requests from forks are not given write access to publish.
 

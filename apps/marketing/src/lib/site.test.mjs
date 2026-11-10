@@ -52,5 +52,6 @@ test('Decap admin assets are relative so GitHub Pages previews resolve', () => {
   );
   assert.match(html, /href="\.\/config\.yml"/);
   assert.match(html, /href="\.\/admin\.css"/);
+  assert.match(html, /<meta name="robots" content="noindex, nofollow" \/>/);
   assert.doesNotMatch(html, /(?:href|src)="\/admin\//);
 });
