@@ -1,7 +1,7 @@
 ---
 title: Privacy Policy
 description: Privacy Policy for singletonsd.com
-updated: '9 August 2026'
+updated: '10 November 2026'
 ---
 
 <p class="callout">
@@ -13,12 +13,15 @@ replaced with counsel-approved terms later.
 
 Singleton Software Development ("Singleton SD", "we," "our," or "us") operates the public
 website at [singletonsd.com](https://singletonsd.com) (the "Site"). This notice explains what
-information we may collect when you visit the Site or book a discovery call.
+information we may collect when you visit the Site, send the contact form, or book a discovery
+call.
 
 ## Information we collect
 
-- **Contact details** you share when you email us or book a calendar appointment (for example
-  name, email, and meeting notes).
+- **Contact details** you share through the contact form, email, or a calendar appointment
+  (name and email, plus optional company name, phone, and a short note).
+- The contact form also records **which page the enquiry came from** (the company contact
+  form). We do not ask how you heard about us.
 - **Technical data** such as IP address, browser type, and basic request logs from hosting
   providers (Azure Static Web Apps and related infrastructure).
 - **CMS editor accounts** for authorised editors who sign in with GitHub to update Site content
@@ -35,7 +38,8 @@ We do not sell personal information.
 ## Sharing
 
 We may share information with infrastructure providers (for example Azure, GitHub, Google
-Calendar) solely to operate the Site and scheduling. We require processors to protect data
+Calendar, and our email delivery service) solely to operate the Site, deliver contact-form
+enquiries to our inbox, and schedule calls. We require processors to protect data
 appropriately.
 
 ## Retention

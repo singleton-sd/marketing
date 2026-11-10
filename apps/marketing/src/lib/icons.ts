@@ -12,4 +12,5 @@ export type IconName =
   | 'zap'
   | 'github'
   | 'twitter'
-  | 'image';
+  | 'image'
+  | 'mail';

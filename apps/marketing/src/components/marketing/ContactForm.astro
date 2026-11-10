@@ -1,0 +1,349 @@
+---
+import type { IconName } from '../../lib/icons';
+import Icon from '../ui/Icon.astro';
+import TextInput from '../ui/TextInput.astro';
+import TextArea from '../ui/TextArea.astro';
+import Button from '../ui/Button.astro';
+import Alert from '../ui/Alert.astro';
+import PageContainer from '../shell/PageContainer.astro';
+import { resolvePostkitApiBaseUrl } from '../../lib/contact-form.mjs';
+
+interface ReachItem {
+  label: string;
+  value: string;
+  href: string;
+  icon: IconName;
+}
+
+interface Props {
+  discoveryCta: { label: string; href: string };
+  class?: string;
+}
+
+const { discoveryCta, class: className = '' } = Astro.props;
+const postkitApiBaseUrl = resolvePostkitApiBaseUrl(
+  import.meta.env.PUBLIC_POSTKIT_API_BASE_URL,
+);
+
+const reachItems: ReachItem[] = [
+  {
+    label: 'Email',
+    value: 'support@singletonsd.com',
+    href: 'mailto:support@singletonsd.com',
+    icon: 'mail',
+  },
+];
+---
+
+<section class:list={['pb-20 pt-4 md:pb-[7.5rem] md:pt-10', className]}>
+  <PageContainer>
+    <div class="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_23.75rem] lg:gap-16">
+      <div class="relative">
+        <div id="contact-form-panel">
+          <form
+            id="contact-form"
+            class="flex flex-col gap-8"
+            novalidate
+            data-postkit-api={postkitApiBaseUrl}
+          >
+            <div id="contact-form-error" class="hidden" role="alert">
+              <Alert variant="error">
+                <span id="contact-form-error-text"
+                  >Please fix the highlighted fields and try again.</span
+                >
+              </Alert>
+            </div>
+
+            <div class="flex flex-col gap-6">
+              <div class="grid gap-6 md:grid-cols-2">
+                <TextInput
+                  id="contact-name"
+                  name="name"
+                  label="Name"
+                  placeholder="e.g. Jane Citizen"
+                  autocomplete="name"
+                  maxlength={120}
+                  required
+                />
+                <TextInput
+                  id="contact-email"
+                  name="email"
+                  type="email"
+                  label="Email"
+                  placeholder="you@company.com"
+                  autocomplete="email"
+                  maxlength={254}
+                  required
+                />
+              </div>
+              <div class="grid gap-6 md:grid-cols-2">
+                <TextInput
+                  id="contact-company"
+                  name="company"
+                  label="Company"
+                  placeholder="e.g. Acme Pty Ltd"
+                  autocomplete="organization"
+                  maxlength={120}
+                  helper="Optional"
+                />
+                <TextInput
+                  id="contact-phone"
+                  name="phone"
+                  type="tel"
+                  label="Phone"
+                  placeholder="e.g. +61 400 000 000"
+                  autocomplete="tel"
+                  maxlength={40}
+                  helper="Optional"
+                />
+              </div>
+              <TextArea
+                id="contact-note"
+                name="note"
+                label="What are you after?"
+                placeholder="A sentence or two about the problem, product, or outcome."
+                helper="Optional — a short note is enough."
+                rows={5}
+                maxlength={4000}
+              />
+            </div>
+
+            <div class="flex flex-col gap-3">
+              <Button type="submit" size="lg" class="w-full sm:w-[12.5rem]">
+                Send message
+              </Button>
+              <p class="m-0 text-caption text-fg-muted">
+                We typically respond within 24 hours. See our
+                <a href="/privacy/" class="text-accent underline-offset-2 hover:underline"
+                  >privacy notice</a
+                >.
+              </p>
+            </div>
+          </form>
+        </div>
+
+        <div id="contact-success" class="hidden space-y-4" role="status" tabindex="-1">
+          <Alert variant="success">
+            Thanks — your message was sent. We typically respond within 24 hours.
+          </Alert>
+          <div id="contact-reset">
+            <Button type="button" variant="outline" size="lg">
+              Send another message
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <aside
+        class="flex flex-col gap-8 rounded-xl border border-border bg-bg-muted p-6 md:p-10"
+      >
+        <div class="space-y-3">
+          <h2 class="m-0 font-heading text-h3 text-fg">Prefer a conversation?</h2>
+          <p class="m-0 text-body-sm leading-relaxed text-fg-muted">
+            Book a Software Discovery Call and we will map scope, risks, and a practical
+            path to production.
+          </p>
+          <Button href={discoveryCta.href} size="lg" class="w-full sm:w-auto">
+            {discoveryCta.label}
+          </Button>
+        </div>
+        <hr class="m-0 border-0 border-t border-border" />
+        <ul class="m-0 flex list-none flex-col gap-5 p-0">
+          {
+            reachItems.map((item) => (
+              <li class="flex items-center gap-3">
+                <span class="inline-flex size-5 shrink-0 text-accent" aria-hidden="true">
+                  <Icon name={item.icon} size={20} />
+                </span>
+                <div class="min-w-0">
+                  <p class="m-0 text-[12px] font-bold uppercase tracking-wide text-fg-muted">
+                    {item.label}
+                  </p>
+                  <a
+                    href={item.href}
+                    class="text-body-sm font-semibold text-fg transition hover:text-accent"
+                  >
+                    {item.value}
+                  </a>
+                </div>
+              </li>
+            ))
+          }
+        </ul>
+      </aside>
+    </div>
+  </PageContainer>
+</section>
+
+<script>
+  import {
+    buildContactPayload,
+    postkitContactHeaders,
+    resolvePostkitApiBaseUrl,
+  } from '../../lib/contact-form.mjs';
+
+  const form = document.getElementById('contact-form') as HTMLFormElement | null;
+  const formPanel = document.getElementById('contact-form-panel');
+  const successPanel = document.getElementById('contact-success');
+  const formError = document.getElementById('contact-form-error');
+  const formErrorText = document.getElementById('contact-form-error-text');
+  const resetButton = document.getElementById('contact-reset')?.querySelector('button');
+  const submitButton = form?.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+  const fieldIds = [
+    'contact-name',
+    'contact-email',
+    'contact-company',
+    'contact-phone',
+    'contact-note',
+  ] as const;
+  const fieldNames = ['name', 'email', 'company', 'phone', 'note'] as const;
+  let attemptedSubmit = false;
+  const FETCH_TIMEOUT_MS = 15_000;
+  const apiBase = resolvePostkitApiBaseUrl(form?.dataset.postkitApi);
+
+  function setFieldError(id: string, message: string | null) {
+    const field = document.getElementById(id) as
+      | HTMLInputElement
+      | HTMLTextAreaElement
+      | null;
+    if (!field) return;
+
+    const wrapper = field.closest('div.flex.w-full.flex-col') ?? field.parentElement;
+    const existing = document.getElementById(`${id}-error`);
+    const helper = document.getElementById(`${id}-helper`);
+    if (existing) existing.remove();
+
+    field.removeAttribute('aria-invalid');
+    field.removeAttribute('aria-describedby');
+    const borderHost = field.tagName === 'INPUT' ? field.parentElement : field;
+    borderHost?.classList.remove('border-status-error');
+    helper?.classList.remove('hidden');
+    if (helper) field.setAttribute('aria-describedby', helper.id);
+
+    if (!message || !wrapper) return;
+
+    const errorId = `${id}-error`;
+    field.setAttribute('aria-invalid', 'true');
+    field.setAttribute('aria-describedby', errorId);
+    borderHost?.classList.add('border-status-error');
+    helper?.classList.add('hidden');
+    const error = document.createElement('p');
+    error.id = errorId;
+    error.className = 'm-0 text-caption text-status-error';
+    error.textContent = message;
+    wrapper.appendChild(error);
+  }
+
+  function readFields() {
+    if (!form) {
+      return { name: '', email: '', company: '', phone: '', note: '' };
+    }
+    return {
+      name: (form.elements.namedItem('name') as HTMLInputElement).value,
+      email: (form.elements.namedItem('email') as HTMLInputElement).value,
+      company: (form.elements.namedItem('company') as HTMLInputElement).value,
+      phone: (form.elements.namedItem('phone') as HTMLInputElement).value,
+      note: (form.elements.namedItem('note') as HTMLTextAreaElement).value,
+    };
+  }
+
+  function applyErrors(errors: Record<string, string | undefined>) {
+    for (const name of fieldNames) {
+      setFieldError(`contact-${name}`, errors[name] ?? null);
+    }
+  }
+
+  function validate(): boolean {
+    const result = buildContactPayload(readFields());
+    applyErrors(result.errors);
+    return result.ok;
+  }
+
+  function revalidateIfNeeded() {
+    if (!attemptedSubmit) return;
+    const ok = validate();
+    formError?.classList.toggle('hidden', ok);
+    if (ok && formErrorText) {
+      formErrorText.textContent = 'Please fix the highlighted fields and try again.';
+    }
+  }
+
+  function showFormError(message: string) {
+    if (formErrorText) formErrorText.textContent = message;
+    formError?.classList.remove('hidden');
+  }
+
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    attemptedSubmit = true;
+    const payload = buildContactPayload(readFields());
+    applyErrors(payload.errors);
+    formError?.classList.toggle('hidden', payload.ok);
+    if (!payload.ok || !payload.value) {
+      if (formErrorText) {
+        formErrorText.textContent = 'Please fix the highlighted fields and try again.';
+      }
+      return;
+    }
+
+    if (submitButton) submitButton.disabled = true;
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    try {
+      const response = await fetch(`${apiBase}/contact`, {
+        method: 'POST',
+        headers: postkitContactHeaders(location.pathname),
+        credentials: 'omit',
+        signal: controller.signal,
+        body: JSON.stringify(payload.value),
+      });
+
+      if (!response.ok) {
+        let detail = 'We could not send your message. Please try again shortly.';
+        if (response.status === 400) {
+          detail = 'Please fix the highlighted fields and try again.';
+        } else if (response.status === 429) {
+          detail = 'Too many messages were sent. Please wait a minute and try again.';
+        } else if (response.status >= 500) {
+          detail = 'Delivery is temporarily unavailable. Please try again later.';
+        }
+        showFormError(detail);
+        return;
+      }
+
+      formPanel?.classList.add('hidden');
+      successPanel?.classList.remove('hidden');
+      formError?.classList.add('hidden');
+      successPanel instanceof HTMLElement && successPanel.focus();
+    } catch (err) {
+      const timedOut = err instanceof DOMException && err.name === 'AbortError';
+      showFormError(
+        timedOut
+          ? 'Delivery is temporarily unavailable. Please try again later.'
+          : 'We could not reach the server. Check your connection and try again.',
+      );
+    } finally {
+      window.clearTimeout(timeoutId);
+      if (submitButton) submitButton.disabled = false;
+    }
+  });
+
+  for (const id of fieldIds) {
+    const field = document.getElementById(id);
+    field?.addEventListener('blur', revalidateIfNeeded);
+    field?.addEventListener('input', revalidateIfNeeded);
+    field?.addEventListener('change', revalidateIfNeeded);
+  }
+
+  resetButton?.addEventListener('click', () => {
+    attemptedSubmit = false;
+    form?.reset();
+    applyErrors({});
+    formError?.classList.add('hidden');
+    if (formErrorText) {
+      formErrorText.textContent = 'Please fix the highlighted fields and try again.';
+    }
+    successPanel?.classList.add('hidden');
+    formPanel?.classList.remove('hidden');
+  });
+</script>
