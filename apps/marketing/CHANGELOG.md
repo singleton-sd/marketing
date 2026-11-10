@@ -2,6 +2,20 @@
 
 Release history for **@singleton-sd/marketing**, generated from conventional commits by the release workflow.
 
+## 0.7.0 — 2026-11-10
+
+### New
+
+- Host marketing site on GitHub Pages
+
+  Replace Azure Static Web Apps deploy with GitHub Pages
+
+### Fixed
+
+- Harden Pages preview and base paths
+
+  Split preview into read-only build vs write publish.
+
 ## 0.6.0 — 2026-08-22
 
 ### New

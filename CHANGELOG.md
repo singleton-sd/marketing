@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026-11-10
+
+- **[@singleton-sd/marketing](apps/marketing/CHANGELOG.md)** `0.6.0` → `0.7.0` (minor)
 ## 2026-08-22
 
 - **[@singleton-sd/marketing](apps/marketing/CHANGELOG.md)** `0.5.0` → `0.6.0` (minor)
