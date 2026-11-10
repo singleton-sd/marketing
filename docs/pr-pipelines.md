@@ -2,9 +2,11 @@
 
 | Workflow | Trigger | Purpose |
 | --- | --- | --- |
-| `deploy-marketing.yml` | push `main` | Production SWA upload |
-| `preview-marketing.yml` | pull_request | SWA Free preview env + PR comment |
+| `pages.yml` | push `main` | Production GitHub Pages (sync `gh-pages`, then `actions/deploy-pages`) |
+| `preview.yml` | pull_request | Path preview at `/pr-preview/pr-<n>/` + sticky PR comment |
+| `publish-pages.yml` | `workflow_call` / `workflow_dispatch` | Official `actions/deploy-pages` of the `gh-pages` tree |
+| `release.yml` | push `main` | Path-aware package bump; dispatches `pages.yml` after a marketing version bump |
 
 Decap OAuth deploys in [`singleton-sd/cms-oauth-kit`](https://github.com/singleton-sd/cms-oauth-kit), not this repository.
 
-OIDC Variables required: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`. Deploy token from `ssd-global-kv-prod-ae` / `swa-marketing-deployment-token`.
+Pages deploys do not use Azure OIDC or a SWA token. Cutover (DNS, repo Pages settings, deleting `ssd-mkt-prod-ae`) is documented in [github-pages-cutover.md](github-pages-cutover.md).

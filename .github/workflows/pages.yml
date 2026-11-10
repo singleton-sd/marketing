@@ -1,0 +1,71 @@
+# Production GitHub Pages deploy on merge to main.
+# Pushes apps/marketing/dist to gh-pages (keeping pr-preview/) then publishes
+# the combined tree with the official actions/deploy-pages flow.
+name: Deploy Marketing (GitHub Pages)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/marketing/**'
+      - '.npmrc'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/pages.yml'
+      - '.github/workflows/publish-pages.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: pages-production-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+    name: Build + sync gh-pages
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Test
+        run: pnpm --filter @singleton-sd/marketing run test
+
+      - name: Build marketing
+        run: pnpm --filter @singleton-sd/marketing... run build
+
+      - name: Smoke marketing tokens
+        run: pnpm --filter @singleton-sd/marketing run test:smoke
+
+      - name: Check Pages dist (CNAME + base)
+        run: pnpm --filter @singleton-sd/marketing run test:pages
+
+      - name: Publish production tree to gh-pages
+        uses: JamesIves/github-pages-deploy-action@v4.8.0
+        with:
+          branch: gh-pages
+          folder: apps/marketing/dist
+          clean: true
+          clean-exclude: pr-preview
+
+  publish:
+    needs: build_and_push
+    uses: ./.github/workflows/publish-pages.yml
+    permissions:
+      contents: read
+      pages: write
+      id-token: write

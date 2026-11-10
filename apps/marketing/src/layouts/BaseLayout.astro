@@ -26,7 +26,9 @@ const {
   showShell = true,
 } = Astro.props;
 
-const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/';
+const base = import.meta.env.BASE_URL || '/';
+const isPreview = base !== '/';
+const currentPath = Astro.url.pathname;
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href;
 const resolvedOgImage = resolveOgImageUrl(ogImage, Astro.site ?? undefined);
 
@@ -56,6 +58,7 @@ const jsonLd = {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     {description ? <meta name="description" content={description} /> : null}
     <title>{title}</title>
+    {isPreview ? <meta name="robots" content="noindex,nofollow" /> : null}
     <link rel="canonical" href={canonicalUrl} />
     <link rel="manifest" href={FAVICON.manifest} />
     <link rel="apple-touch-icon" href={FAVICON.appleTouch} />

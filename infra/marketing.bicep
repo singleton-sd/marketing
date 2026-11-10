@@ -1,5 +1,7 @@
-// Company marketing Static Web App.
-// Deploy into rg-ssd-marketing. Secrets live in rg-ssd-global / ssd-global-kv-prod-ae.
+// Company marketing Static Web App (legacy host).
+// Site hosting moved to GitHub Pages; do not deploy this after cutover.
+// Delete ssd-mkt-prod-ae only after docs/github-pages-cutover.md verification.
+// Secrets live in rg-ssd-global / ssd-global-kv-prod-ae.
 // Decap OAuth is the shared cms-oauth-kit service (auth.singletonsd.com) — no plan here.
 
 @description('Static Web Apps region (Free SKU is region-limited; eastasia works)')

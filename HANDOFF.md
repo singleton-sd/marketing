@@ -1,6 +1,10 @@
 # Handoff — remaining interactive steps
 
-Live preview (no custom domain yet):
+Hosting cutover (GitHub Pages, DNS, SWA deletion) is in
+[docs/github-pages-cutover.md](docs/github-pages-cutover.md). Do not apply
+Route 53 from this file’s SWA commands after that cutover.
+
+Live SWA (until DNS is flipped):
 https://yellow-bush-0894e2800.7.azurestaticapps.net/
 
 Parent ClickUp: https://app.clickup.com/t/86d3zhkz4
@@ -13,7 +17,7 @@ Parent ClickUp: https://app.clickup.com/t/86d3zhkz4
 - `rg-ssd-marketing` / SWA `ssd-mkt-prod-ae`
 - GHA OIDC app `ssd-mkt-gha-oidc-prod` + Variables + ID-form federated credentials
 - Production SWA deploy via Actions succeeding
-- Workflows: `deploy-marketing.yml`, `preview-marketing.yml`
+- Workflows (legacy SWA; replaced by `pages.yml` / `preview.yml`): `deploy-marketing.yml`, `preview-marketing.yml`
 - Decap `/admin` OAuth: shared `cms-oauth-kit` at `https://auth.singletonsd.com`
 
 ## Blocked on you (interactive)

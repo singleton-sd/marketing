@@ -6,11 +6,12 @@
   "scripts": {
     "copy-tokens": "node ./scripts/copy-token-css.mjs",
     "dev": "node ./scripts/copy-token-css.mjs && astro dev",
-    "build": "node ../../scripts/validate-staticwebapp-config.mjs public/staticwebapp.config.json && node ./scripts/copy-token-css.mjs && astro build",
+    "build": "node ./scripts/copy-token-css.mjs && astro build",
     "preview": "astro preview",
-    "lint": "node ../../scripts/validate-staticwebapp-config.mjs public/staticwebapp.config.json && astro check",
-    "test": "node --test ../../scripts/validate-staticwebapp-config.test.mjs src/lib/site.test.mjs scripts/smoke-tokens.test.mjs && node ../../scripts/validate-staticwebapp-config.mjs public/staticwebapp.config.json && astro check",
-    "test:smoke": "node ./scripts/smoke-tokens.mjs"
+    "lint": "astro check",
+    "test": "node --test src/lib/site.test.mjs src/lib/with-base.test.mjs src/lib/pages-hosting.test.mjs scripts/smoke-tokens.test.mjs scripts/check-pages-dist.test.mjs && astro check",
+    "test:smoke": "node ./scripts/smoke-tokens.mjs",
+    "test:pages": "node ./scripts/check-pages-dist.mjs"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.4",

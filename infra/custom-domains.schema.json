@@ -1,5 +1,5 @@
 {
-  "$comment": "JSON shape for infra/custom-domains.*.json consumed by scripts/apply-route53-dns.ps1, bind-custom-domains.ps1, deploy-swa-from-kv.ps1",
+  "$comment": "JSON shape for infra/custom-domains.*.json consumed by scripts/apply-route53-dns.ps1 and bind-custom-domains.ps1",
   "type": "object",
   "required": ["zoneDomain"],
   "properties": {

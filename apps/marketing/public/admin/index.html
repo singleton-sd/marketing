@@ -6,6 +6,16 @@
     <title>Singleton SD Content Admin</title>
     <meta name="description" content="Content admin for Singleton SD marketing pages" />
     <meta name="robots" content="noindex, nofollow" />
+    <!-- GitHub Pages has no SWA route 301 /admin → /admin/. Directory URLs plus this
+         keep config.yml and CSS resolving next to this page (including PR previews). -->
+    <script>
+      (function () {
+        var path = window.location.pathname;
+        if (path.length > 1 && path.charAt(path.length - 1) !== '/') {
+          window.location.replace(path + '/' + window.location.search + window.location.hash);
+        }
+      })();
+    </script>
     <link
       rel="icon"
       type="image/png"
@@ -26,26 +36,26 @@
       rel="apple-touch-icon"
       href="https://assets.singletonsd.com/favicons/circle/bg-none/apple-touch-icon.png"
     />
-    <!-- Absolute path: at /admin (no trailing slash) a relative config.yml resolves to /config.yml. -->
-    <link href="/admin/config.yml" type="text/yaml" rel="cms-config-url" />
+    <!-- Relative: at /admin (no trailing slash) these would resolve to the site root. -->
+    <link href="config.yml" type="text/yaml" rel="cms-config-url" />
     <!-- Open Sauce Sans — matches Singleton SD --ssd-font-family-* tokens. -->
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/@fontsource/open-sauce-sans@5.3.0/index.css"
     />
-    <link rel="stylesheet" href="/admin/vendor/tokens-dark.css" />
-    <link rel="stylesheet" href="/admin/admin.css" />
+    <link rel="stylesheet" href="vendor/tokens-dark.css" />
+    <link rel="stylesheet" href="admin.css" />
   </head>
   <body>
     <!--
       Decap is a static admin SPA. It talks to GitHub, not Astro at runtime.
-      GitHub OAuth requires the Azure Function proxy before non-dev login works.
+      GitHub OAuth requires the cms-oauth-kit proxy before non-dev login works.
       Pin exact Decap version: CSS overrides target Emotion class labels that
       drift across releases (see docs/marketing-astro-decap.md).
     -->
     <script src="https://unpkg.com/decap-cms@3.15.1/dist/decap-cms.js"></script>
-    <script src="/admin/admin-preview.js"></script>
+    <script src="admin-preview.js"></script>
     <!-- Unofficial Emotion hex remapper — Decap has no admin theme API. -->
-    <script src="/admin/admin-theme.js"></script>
+    <script src="admin-theme.js"></script>
   </body>
 </html>

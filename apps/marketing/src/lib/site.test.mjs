@@ -33,6 +33,14 @@ test('resolveOgImageUrl returns relative path when site is missing', () => {
   assert.equal(resolveOgImageUrl('/uploads/og.jpg', undefined, FALLBACK), '/uploads/og.jpg');
 });
 
+test('public/CNAME is www.singletonsd.com for GitHub Pages', () => {
+  const cname = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), '../../public/CNAME'),
+    'utf8',
+  );
+  assert.equal(cname.trim(), 'www.singletonsd.com');
+});
+
 test('Decap GitHub backend uses shared cms-oauth-kit', () => {
   const yaml = readFileSync(
     join(dirname(fileURLToPath(import.meta.url)), '../../public/admin/config.yml'),

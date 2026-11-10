@@ -11,7 +11,7 @@
 (function registerAdminPreview() {
   if (!window.CMS) return;
 
-  CMS.registerPreviewStyle('/admin/preview.css');
+  CMS.registerPreviewStyle('preview.css');
 
   /**
    * Preview CSS uses root/dark tokens on :root. Stamp data-theme anyway so
@@ -73,7 +73,7 @@
       return h(
         'div',
         { className: 'pk-preview pk-preview--page' },
-        h('a', { className: 'pk-preview__back', href: '/' }, '← Back to Singleton SD'),
+        h('a', { className: 'pk-preview__back', href: '../' }, '← Back to Singleton SD'),
         h(
           'article',
           { className: 'pk-preview__article' },
