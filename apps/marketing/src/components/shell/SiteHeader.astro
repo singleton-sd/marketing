@@ -1,7 +1,7 @@
 ---
 import Button from '../ui/Button.astro';
 import Icon from '../ui/Icon.astro';
-import { appCta, primaryNav } from '../../lib/nav';
+import { appCta, isActivePath, primaryNav, withBase } from '../../lib/nav';
 import { LOGO_LIGHT, SITE_NAME } from '../../lib/site';
 
 interface Props {
@@ -9,17 +9,18 @@ interface Props {
 }
 
 const { currentPath = '/' } = Astro.props;
+const base = import.meta.env.BASE_URL || '/';
+const homeHref = withBase('/', base);
 
 function isActive(href: string) {
-  if (href === '/') return currentPath === '/';
-  return currentPath === href || currentPath.startsWith(`${href}/`);
+  return isActivePath(currentPath, href, base);
 }
 ---
 
 <header class="sticky top-0 z-40 border-b border-border bg-bg">
   <div class="mx-auto flex h-14 max-w-content items-center justify-between px-5 md:h-16 md:px-10">
     <a
-      href="/"
+      href={homeHref}
       class="inline-flex items-center no-underline"
       aria-label={`${SITE_NAME} — home`}
     >
@@ -39,7 +40,7 @@ function isActive(href: string) {
           const active = isActive(link.href);
           return (
             <a
-              href={link.href}
+              href={withBase(link.href, base)}
               class:list={[
                 'relative text-body-sm no-underline transition',
                 active
@@ -86,7 +87,7 @@ function isActive(href: string) {
       <div class="flex flex-col gap-8">
         <div class="flex items-center justify-between">
           <a
-            href="/"
+            href={homeHref}
             class="inline-flex items-center no-underline"
             aria-label={`${SITE_NAME} — home`}
           >
@@ -113,7 +114,7 @@ function isActive(href: string) {
               const active = isActive(link.href);
               return (
                 <a
-                  href={link.href}
+                  href={withBase(link.href, base)}
                   class:list={[
                     'font-heading text-[1.625rem] leading-tight no-underline',
                     active ? 'text-accent' : 'text-fg',

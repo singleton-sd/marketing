@@ -19,7 +19,7 @@ ClickUp tickets must include `[repo=singleton-sd/marketing]`.
 | Site | Astro SSG (`apps/marketing`) |
 | CMS | Decap at `/admin` (GitHub backend) |
 | OAuth | Shared `cms-oauth-kit` at `https://auth.singletonsd.com` |
-| Host | Azure SWA Free `ssd-mkt-prod-ae` (`www.singletonsd.com`) |
+| Host | GitHub Pages (`www.singletonsd.com`; cutover runbook `docs/github-pages-cutover.md`) |
 | Secrets | Shared KV `ssd-global-kv-prod-ae` in `rg-ssd-global` |
 | Assets CDN | `assets.singletonsd.com` (favicons/OG — link only, no binaries in repo) |
 | App RG | `rg-ssd-marketing` |
@@ -28,8 +28,8 @@ ClickUp tickets must include `[repo=singleton-sd/marketing]`.
 ## Delivery
 
 - Feature branches: `feature/MKT-<n>-<kebab>` in a worktree when possible
-- Solo agent runs may merge to `main` without PRs; still maintain `preview-marketing.yml` for human PRs
-- Never put secrets in GitHub Secrets — OIDC → Key Vault only
+- Solo agent runs may merge to `main` without PRs; still maintain `preview.yml` for human PRs
+- Never put secrets in GitHub Secrets — Pages deploy uses `GITHUB_TOKEN` only
 
 ## Sources of truth (poc)
 

@@ -1,3 +1,5 @@
+export { isActivePath, withBase } from './with-base.mjs';
+
 export type NavLink = {
   label: string;
   href: string;

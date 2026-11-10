@@ -1,6 +1,6 @@
 {
   "$schema": "./custom-domains.schema.json",
-  "comment": "Company marketing custom domains under singletonsd.com",
+  "comment": "LIVE SWA DNS/bindings until GitHub Pages cutover. Do not apply Pages records from this file — see docs/github-pages-cutover.md.",
   "zoneDomain": "singletonsd.com",
   "resourceGroup": "rg-ssd-marketing",
   "ttlSeconds": 300,

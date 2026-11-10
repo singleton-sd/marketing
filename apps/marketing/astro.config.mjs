@@ -2,11 +2,14 @@ import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 import tailwind from '@astrojs/tailwind';
 
-// Astro static company marketing site (SWA Free)
+const previewBase = process.env.PREVIEW_BASE_PATH ?? '/';
+
+// Astro static company marketing site (GitHub Pages)
 export default defineConfig({
   site: 'https://www.singletonsd.com',
+  base: previewBase,
   output: 'static',
-  // Match sitemap/canonical URLs (/about/) and SWA directory output.
+  // Directory output (`/about/index.html`) matches sitemap/canonical URLs.
   trailingSlash: 'always',
   integrations: [
     tailwind({

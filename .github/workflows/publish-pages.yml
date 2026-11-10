@@ -1,0 +1,53 @@
+# Official GitHub Pages publish (actions/deploy-pages).
+# Content source of truth is the gh-pages branch (production at repo root,
+# PR previews under pr-preview/pr-<n>/). Called after production or preview
+# updates that branch.
+name: Publish GitHub Pages
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+concurrency:
+  group: pages-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: site
+
+      - name: Stage Pages artifact
+        run: |
+          set -euo pipefail
+          mkdir -p artifact
+          tar -C site --exclude .git -cf - . | tar -C artifact -xf -
+          if [ ! -f artifact/index.html ] && [ ! -d artifact/pr-preview ]; then
+            echo "::error::gh-pages artifact is empty (no index.html or pr-preview/)."
+            exit 1
+          fi
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: artifact
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

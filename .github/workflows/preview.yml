@@ -1,0 +1,226 @@
+# GitHub Pages PR previews under /pr-preview/pr-<n>/ (poc-inkads-marketing pattern).
+name: Preview Marketing (GitHub Pages)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    paths:
+      - 'apps/marketing/**'
+      - '.npmrc'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/preview.yml'
+      - '.github/workflows/publish-pages.yml'
+
+concurrency:
+  group: preview-pr-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+  pages: write
+  id-token: write
+
+jobs:
+  preview:
+    if: >
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      contains(fromJSON('["opened","reopened","synchronize"]'), github.event.action)
+    runs-on: ubuntu-latest
+    name: Build + Pages preview
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set preview URLs
+        id: urls
+        run: |
+          echo "preview_url=https://www.singletonsd.com/pr-preview/pr-${{ github.event.number }}/" >> "$GITHUB_OUTPUT"
+          echo "fallback_url=https://singleton-sd.github.io/marketing/pr-preview/pr-${{ github.event.number }}/" >> "$GITHUB_OUTPUT"
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Test
+        run: pnpm --filter @singleton-sd/marketing run test
+
+      - name: Build preview site
+        run: pnpm --filter @singleton-sd/marketing... run build
+        env:
+          PREVIEW_BASE_PATH: /pr-preview/pr-${{ github.event.number }}/
+
+      - name: Smoke marketing tokens
+        run: pnpm --filter @singleton-sd/marketing run test:smoke
+
+      - name: Check Pages dist (CNAME + preview base)
+        run: pnpm --filter @singleton-sd/marketing run test:pages
+        env:
+          PREVIEW_BASE_PATH: /pr-preview/pr-${{ github.event.number }}/
+
+      # pr-preview-action is composite; retry once on gh-pages write races.
+      - name: Deploy preview
+        id: preview
+        continue-on-error: true
+        uses: rossjrw/pr-preview-action@v1.8.1
+        with:
+          source-dir: apps/marketing/dist
+          preview-branch: gh-pages
+          pages-base-url: https://www.singletonsd.com
+          umbrella-dir: pr-preview
+          comment: false
+
+      - name: Retry deploy preview
+        if: steps.preview.outcome == 'failure'
+        uses: rossjrw/pr-preview-action@v1.8.1
+        with:
+          source-dir: apps/marketing/dist
+          preview-branch: gh-pages
+          pages-base-url: https://www.singletonsd.com
+          umbrella-dir: pr-preview
+          comment: false
+
+      - name: Publish combined Pages site
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if ! gh workflow list --json path --jq '.[].path' | grep -qx '.github/workflows/publish-pages.yml'; then
+            echo "publish-pages.yml is not on the default branch yet. Preview files are on gh-pages; the first production Pages deploy after merge will include them."
+            exit 0
+          fi
+          gh workflow run publish-pages.yml --ref main
+
+      - name: Post sticky preview comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: pages-preview-marketing
+          recreate: true
+          message: |
+            <!-- pages-preview-marketing -->
+            ### Marketing preview (GitHub Pages)
+
+            Static preview for `apps/marketing` at `/pr-preview/pr-${{ github.event.number }}/`.
+
+            - Preview: ${{ steps.urls.outputs.preview_url }}
+            - Fallback until DNS cutover: ${{ steps.urls.outputs.fallback_url }}
+
+            Astro `base` is `PREVIEW_BASE_PATH`. Production stays at `https://www.singletonsd.com/`.
+
+            The combined site is published with `actions/deploy-pages` after `publish-pages.yml` exists on `main`.
+
+      - name: Update preview link in pull request body
+        uses: actions/github-script@v7
+        env:
+          PREVIEW_URL: ${{ steps.urls.outputs.preview_url }}
+          FALLBACK_URL: ${{ steps.urls.outputs.fallback_url }}
+        with:
+          script: |
+            const markerStart = '<!-- pages-preview:start -->';
+            const markerEnd = '<!-- pages-preview:end -->';
+            const managedBlock = new RegExp(
+              `${markerStart}[\\s\\S]*?${markerEnd}\\n*`,
+              'm',
+            );
+            const pull = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+            const currentBody = pull.data.body ?? '';
+            const bodyWithoutPreview = currentBody.replace(managedBlock, '').trim();
+            const previewBlock = [
+              markerStart,
+              '## Preview',
+              '',
+              `🔗 **[Open live preview](${process.env.PREVIEW_URL})**`,
+              '',
+              `_Until DNS cutover, use [GitHub Pages fallback](${process.env.FALLBACK_URL})._`,
+              markerEnd,
+            ].join('\n');
+            const body = `${previewBlock}${bodyWithoutPreview ? `\n\n${bodyWithoutPreview}` : ''}`;
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              body,
+            });
+
+  cleanup:
+    if: >
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    name: Remove Pages preview
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Remove preview
+        id: remove_preview
+        continue-on-error: true
+        uses: rossjrw/pr-preview-action@v1.8.1
+        with:
+          source-dir: apps/marketing/dist
+          preview-branch: gh-pages
+          pages-base-url: https://www.singletonsd.com
+          umbrella-dir: pr-preview
+          comment: false
+
+      - name: Retry remove preview
+        if: steps.remove_preview.outcome == 'failure'
+        uses: rossjrw/pr-preview-action@v1.8.1
+        with:
+          source-dir: apps/marketing/dist
+          preview-branch: gh-pages
+          pages-base-url: https://www.singletonsd.com
+          umbrella-dir: pr-preview
+          comment: false
+
+      - name: Publish combined Pages site
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if ! gh workflow list --json path --jq '.[].path' | grep -qx '.github/workflows/publish-pages.yml'; then
+            echo "publish-pages.yml is not on the default branch yet; skipping Pages republish."
+            exit 0
+          fi
+          gh workflow run publish-pages.yml --ref main
+
+      - name: Hide sticky preview comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: pages-preview-marketing
+          hide: true
+
+      - name: Remove preview block from pull request body
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const markerStart = '<!-- pages-preview:start -->';
+            const markerEnd = '<!-- pages-preview:end -->';
+            const managedBlock = new RegExp(
+              `${markerStart}[\\s\\S]*?${markerEnd}\\n*`,
+              'm',
+            );
+            const pull = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+            const currentBody = pull.data.body ?? '';
+            const body = currentBody.replace(managedBlock, '').trim();
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              body,
+            });

@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageContainer from '../components/shell/PageContainer.astro';
 import { getCollection, type CollectionEntry } from 'astro:content';
+import { withBase } from '../lib/nav';
 
 export async function getStaticPaths() {
   const pages = await getCollection('pages');
@@ -21,13 +22,14 @@ interface Props {
 const { page } = Astro.props;
 const { Content } = await page.render();
 const { title, description, ogImage, updated } = page.data;
+const homeHref = withBase('/', import.meta.env.BASE_URL || '/');
 ---
 
 <BaseLayout title={title} description={description} ogImage={ogImage}>
   <PageContainer narrow class="pb-16 pt-[clamp(2rem,8vh,4rem)]">
     <a
       class="mb-6 inline-block text-fg-muted no-underline hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-      href="/"
+      href={homeHref}
     >
       ← Back to Singleton SD
     </a>

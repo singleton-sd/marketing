@@ -3,8 +3,8 @@
 ## Prerequisites
 
 - Node 20+ / pnpm 9.15
-- Azure CLI logged into subscription `01c0bb8b-3770-4765-979a-cb13ae7e3dd2`
-- AWS CLI (Route53 for `singletonsd.com`)
+- Azure CLI only for the SWA teardown in `docs/github-pages-cutover.md`
+- AWS CLI (Route53 for `singletonsd.com`) — DNS is owned outside this repo
 - Decap `/admin` login uses shared `cms-oauth-kit` (see `docs/marketing-astro-decap.md`)
 
 ## Local
@@ -18,50 +18,37 @@ pnpm dev
 # Admin: http://localhost:4321/admin (shared OAuth at https://auth.singletonsd.com; ORIGINS includes localhost:4321)
 ```
 
-## Azure resources
+## Hosting (GitHub Pages)
+
+Production is GitHub Pages (`www.singletonsd.com`). Workflows: `.github/workflows/pages.yml` (production), `preview.yml` (PR path previews), `publish-pages.yml` (`actions/deploy-pages`).
+
+Cutover (enable Pages, Route 53, then delete SWA): [docs/github-pages-cutover.md](docs/github-pages-cutover.md).
+
+## Azure resources (legacy SWA — delete after cutover)
 
 | Resource | Name |
 | --- | --- |
 | Global RG | `rg-ssd-global` |
 | Global Key Vault | `ssd-global-kv-prod-ae` |
 | Marketing RG | `rg-ssd-marketing` |
-| SWA | `ssd-mkt-prod-ae` |
+| SWA (remove after Pages is verified) | `ssd-mkt-prod-ae` |
 | Decap OAuth | `https://auth.singletonsd.com` (`singleton-sd/cms-oauth-kit` in `rg-ssd-global`) |
 
 ### Secrets in global KV (tagged `repo=singleton-sd/marketing`)
 
-- `swa-marketing-deployment-token`
+- `swa-marketing-deployment-token` — delete after SWA is gone (see cutover runbook)
 
 `github-decap-oauth-client-secret` stays in the same vault for `cms-oauth-kit`. Do not manage OAuth client id/secret or `ORIGINS` from this repo.
 
-### GitHub Variables (IDs only)
-
-- `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`
-
-Entra app `ssd-mkt-gha-oidc-prod` federated subjects must include both classic and ID-form claims (GitHub may emit either):
-
-- `repo:singleton-sd/marketing:ref:refs/heads/main`
-- `repo:singleton-sd/marketing:pull_request`
-- `repo:singleton-sd@275041854/marketing@1328843767:ref:refs/heads/main`
-- `repo:singleton-sd@275041854/marketing@1328843767:pull_request`
+Pages deploys do not use `AZURE_CLIENT_ID` / OIDC. Those GitHub Variables and Entra app `ssd-mkt-gha-oidc-prod` are unused after SWA deletion.
 
 ## Deploy
 
-```powershell
-az account set --subscription 01c0bb8b-3770-4765-979a-cb13ae7e3dd2
-az deployment group create -g rg-ssd-global -f infra/global.bicep
-az deployment group create -g rg-ssd-marketing -f infra/marketing.bicep
-# OAuth Function lives in singleton-sd/cms-oauth-kit (not this repo).
-pwsh ./scripts/deploy-swa-from-kv.ps1 -ConfigPath ./infra/custom-domains.marketing.json -DeployName marketing
-```
+Push to `main` (or `workflow_dispatch` `.github/workflows/pages.yml`). Do not deploy SWA from this repo.
 
 ## DNS
 
-```powershell
-aws login   # if session expired
-pwsh ./scripts/apply-route53-dns.ps1 -ConfigPath ./infra/custom-domains.marketing.json
-pwsh ./scripts/bind-custom-domains.ps1 -ConfigPath ./infra/custom-domains.marketing.json
-```
+Route 53 is owned outside this repo. Target GitHub Pages records are in [docs/github-pages-cutover.md](docs/github-pages-cutover.md). `infra/custom-domains.marketing.json` still describes the live SWA records until that cutover.
 
 ## Ticket map (initial)
 
@@ -85,8 +72,8 @@ pwsh ./scripts/bind-custom-domains.ps1 -ConfigPath ./infra/custom-domains.market
 
 | Host | Role |
 | --- | --- |
-| `www.singletonsd.com` | Canonical site (Azure SWA `ssd-mkt-prod-ae`) |
-| `singletonsd.com` (apex) | Existing CloudFront 301 → `https://www.singletonsd.com/` |
+| `www.singletonsd.com` | Canonical site (GitHub Pages; SWA until DNS cutover) |
+| `singletonsd.com` (apex) | Redirect → `https://www.singletonsd.com/` (GitHub Pages after cutover) |
 | `assets.singletonsd.com` | Brand CDN — favicons/OG linked from app; do not vendor binaries into this repo |
 
 Canonical origin in Astro/`config.yml`: `https://www.singletonsd.com`.
@@ -97,7 +84,7 @@ Path-aware bumps (same model as poc-plattform-kit): each `@singleton-sd/*`
 package versions independently from conventional commits on its watch paths.
 On `main`, `.github/workflows/release.yml` runs `pnpm release:ci`, writes the
 root bump index + marketing product changelog / JSON, tags
-`@scope/name@version`, then dispatches deploys.
+`@scope/name@version`, then dispatches `pages.yml`.
 
 Public **What’s new** page: `/changelog` (see `docs/client-changelog.md`).
 
