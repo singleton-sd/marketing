@@ -2,7 +2,7 @@
 
 `[repo=singleton-sd/marketing]`
 
-Locked stack for `singletonsd.com` (Azure SWA Free `ssd-mkt-prod-ae`).
+Locked stack for `singletonsd.com` (GitHub Pages at `www.singletonsd.com`).
 
 ## Stack
 
@@ -13,7 +13,8 @@ Locked stack for `singletonsd.com` (Azure SWA Free `ssd-mkt-prod-ae`).
 | Content | Markdown under `apps/marketing/src/content/pages/` |
 | CMS | Decap at `/admin` |
 | OAuth | Shared `cms-oauth-kit` at `https://auth.singletonsd.com` |
-| Secrets | Global KV `ssd-global-kv-prod-ae` |
+| Host | GitHub Pages (`www.singletonsd.com`) |
+| Secrets | Global KV `ssd-global-kv-prod-ae` (OAuth Function — not Pages) |
 
 ## Decap `/admin` auth
 
@@ -35,7 +36,7 @@ backend:
 | Callback | `https://auth.singletonsd.com/callback` |
 | GitHub OAuth App | [Singleton SD CMS OAuth](https://github.com/settings/applications/3783537) |
 
-Shared `ORIGINS` already includes `*.singletonsd.com`, apex `singletonsd.com`, and `localhost:4321`. Do **not** maintain a second origin list here. Do **not** open `/admin` on a raw `*.azurestaticapps.net` host.
+Shared `ORIGINS` already includes `*.singletonsd.com`, apex `singletonsd.com`, and `localhost:4321`. Do **not** maintain a second origin list here. Prefer `/admin` on `https://www.singletonsd.com`; GitHub Pages preview paths are noindex and are not a supported CMS origin.
 
 Add origins, rotate the OAuth App, or deploy the Function only in `cms-oauth-kit`. This repo must not recreate `apps/marketing-oauth` or `infra/decap-oauth.bicep`.
 

@@ -6,15 +6,14 @@ Public landing site for **Singleton Software Development** at [singletonsd.com](
 
 - Astro SSG + Tailwind + `@singleton-sd/tokens` (GitLab npm, `--ssd-*`)
 - Decap CMS at `/admin` (GitHub backend)
-- Azure Static Web Apps Free
+- GitHub Pages at `www.singletonsd.com` (PR previews at `/pr-preview/pr-<n>/`)
 - Shared Decap OAuth: [`cms-oauth-kit`](https://github.com/singleton-sd/cms-oauth-kit) at `https://auth.singletonsd.com`
-- Shared Key Vault in `rg-ssd-global`
 
 ## Quick start
 
-```powershell
+```sh
 pnpm install
 pnpm dev
 ```
 
-See [SETUP.md](SETUP.md) and [AGENTS.md](AGENTS.md).
+See [SETUP.md](SETUP.md), [docs/deployment.md](docs/deployment.md), and [AGENTS.md](AGENTS.md).

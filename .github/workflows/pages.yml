@@ -1,0 +1,58 @@
+# Production GitHub Pages deploy on push to main.
+# House pattern: singleton-sd/poc-inkads-marketing `.github/workflows/pages.yml`
+name: Deploy production GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: pages-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    name: Build + GitHub Pages production
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 9.15.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests
+        run: pnpm --filter @singleton-sd/marketing run test
+
+      - name: Build production site
+        run: pnpm --filter @singleton-sd/marketing... run build
+
+      - name: Smoke marketing tokens
+        run: pnpm --filter @singleton-sd/marketing run test:smoke
+
+      - name: Check production asset paths
+        run: node scripts/check-pages-asset-paths.mjs apps/marketing/dist /
+
+      - name: Deploy production site
+        uses: JamesIves/github-pages-deploy-action@v4.8.0
+        with:
+          branch: gh-pages
+          folder: apps/marketing/dist
+          clean: true
+          clean-exclude: pr-preview

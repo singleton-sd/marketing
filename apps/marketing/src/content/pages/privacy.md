@@ -20,7 +20,7 @@ information we may collect when you visit the Site or book a discovery call.
 - **Contact details** you share when you email us or book a calendar appointment (for example
   name, email, and meeting notes).
 - **Technical data** such as IP address, browser type, and basic request logs from hosting
-  providers (Azure Static Web Apps and related infrastructure).
+  providers (GitHub Pages and related infrastructure).
 - **CMS editor accounts** for authorised editors who sign in with GitHub to update Site content
   via Decap CMS.
 
@@ -34,7 +34,7 @@ We do not sell personal information.
 
 ## Sharing
 
-We may share information with infrastructure providers (for example Azure, GitHub, Google
+We may share information with infrastructure providers (for example GitHub, Azure, Google
 Calendar) solely to operate the Site and scheduling. We require processors to protect data
 appropriately.
 

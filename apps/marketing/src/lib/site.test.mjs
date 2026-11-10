@@ -44,3 +44,13 @@ test('Decap GitHub backend uses shared cms-oauth-kit', () => {
   assert.doesNotMatch(yaml, /azurewebsites\.net/);
   assert.doesNotMatch(yaml, /ssd-mkt-decap-oauth/);
 });
+
+test('Decap admin assets are relative so GitHub Pages previews resolve', () => {
+  const html = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), '../../public/admin/index.html'),
+    'utf8',
+  );
+  assert.match(html, /href="\.\/config\.yml"/);
+  assert.match(html, /href="\.\/admin\.css"/);
+  assert.doesNotMatch(html, /(?:href|src)="\/admin\//);
+});

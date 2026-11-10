@@ -1,6 +1,6 @@
 ---
 import Icon from '../ui/Icon.astro';
-import { footerColumns } from '../../lib/nav';
+import { footerColumns, withBase } from '../../lib/nav';
 import { LOGO_DARK, SITE_NAME } from '../../lib/site';
 
 interface Props {
@@ -12,13 +12,15 @@ const {
 } = Astro.props;
 
 const year = new Date().getFullYear();
+const base = import.meta.env.BASE_URL || '/';
+const homeHref = withBase('/', base);
 ---
 
 <footer class="bg-bg-inverse text-fg-inverse">
   <div class="mx-auto max-w-content px-5 py-12 md:px-10 md:py-16">
     <div class="flex flex-col gap-12 lg:flex-row lg:justify-between">
       <div class="max-w-xs space-y-4">
-        <a href="/" class="inline-flex items-center no-underline" aria-label={SITE_NAME}>
+        <a href={homeHref} class="inline-flex items-center no-underline" aria-label={SITE_NAME}>
           <img
             src={LOGO_DARK}
             alt=""
@@ -42,7 +44,7 @@ const year = new Date().getFullYear();
                 {column.links.map((link) => (
                   <li>
                     <a
-                      href={link.href}
+                      href={withBase(link.href, base)}
                       class="text-caption text-fg-subtle no-underline transition hover:text-accent"
                     >
                       {link.label}
