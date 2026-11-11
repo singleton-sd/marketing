@@ -33,14 +33,31 @@ test('resolveOgImageUrl returns relative path when site is missing', () => {
   assert.equal(resolveOgImageUrl('/uploads/og.jpg', undefined, FALLBACK), '/uploads/og.jpg');
 });
 
-test('Decap GitHub backend uses shared cms-oauth-kit', () => {
+function parseYamlMapping(text, key) {
+  const match = text.match(new RegExp(`^${key}:\\n((?:  .+\\n)+)`, 'm'));
+  assert.ok(match, `expected a ${key} mapping`);
+  const mapping = {};
+  for (const line of match[1].trimEnd().split('\n')) {
+    const kv = line.match(/^  ([A-Za-z0-9_]+): (.+)$/);
+    assert.ok(kv, `unexpected ${key} line: ${line}`);
+    mapping[kv[1]] = kv[2];
+  }
+  return mapping;
+}
+
+test('Decap GitHub backend uses API gateway cms-auth', () => {
   const yaml = readFileSync(
     join(dirname(fileURLToPath(import.meta.url)), '../../public/admin/config.yml'),
     'utf8',
   );
-  assert.match(yaml, /^  repo: singleton-sd\/marketing$/m);
-  assert.match(yaml, /^  base_url: https:\/\/auth\.singletonsd\.com$/m);
-  assert.match(yaml, /^  auth_endpoint: auth$/m);
+  const backend = parseYamlMapping(yaml, 'backend');
+  assert.equal(backend.name, 'github');
+  assert.equal(backend.repo, 'singleton-sd/marketing');
+  assert.equal(backend.branch, 'main');
+  assert.equal(backend.base_url, 'https://api.singletonsd.com');
+  assert.equal(backend.auth_endpoint, 'v1/cms-auth/auth');
+  assert.equal(backend.scope, undefined);
+  assert.doesNotMatch(yaml, /auth\.singletonsd\.com/);
   assert.doesNotMatch(yaml, /azurewebsites\.net/);
   assert.doesNotMatch(yaml, /ssd-mkt-decap-oauth/);
 });

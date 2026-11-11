@@ -108,8 +108,8 @@ redirects the apex to www once both record sets exist.
    GitHub Pages IPs; HTTPS 200 on www; apex redirects to www.
 7. **Last:** delete Azure SWA `ssd-mkt-prod-ae` in `rg-ssd-marketing` (and the
    Key Vault secret `swa-marketing-deployment-token` if unused). Do **not**
-   delete `rg-ssd-global`, `ssd-global-kv-prod-ae`, or
-   `cms-oauth-kit` / `auth.singletonsd.com`. **Do not delete Azure resources
+   delete `rg-ssd-global`, `ssd-global-kv-prod-ae`, or the CMS auth
+   gateway at `api.singletonsd.com`. **Do not delete Azure resources
    from an agent.**
 
 ## SWA behaviours vs GitHub Pages

@@ -6,7 +6,8 @@
 | `preview.yml` | pull_request | Read-only build with `PREVIEW_BASE_PATH=/pr-preview/pr-<n>/`, then publish to `gh-pages` + sticky comment |
 | `release.yml` | push `main` | Path-aware package bump; dispatches `pages.yml` after a release commit |
 
-Decap OAuth deploys in [`singleton-sd/cms-oauth-kit`](https://github.com/singleton-sd/cms-oauth-kit), not this repository.
+Decap GitHub OAuth is served by the API gateway
+(`https://api.singletonsd.com/v1/cms-auth`), not this repository.
 
 GitHub Pages uses `GITHUB_TOKEN` (contents write on `gh-pages`). No Azure SWA
 deploy token and no GitHub Actions secrets are required for hosting.

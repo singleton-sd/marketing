@@ -7,7 +7,7 @@ Public landing site for **Singleton Software Development** at [singletonsd.com](
 - Astro SSG + Tailwind + `@singleton-sd/tokens` (GitLab npm, `--ssd-*`)
 - Decap CMS at `/admin` (GitHub backend)
 - GitHub Pages at `www.singletonsd.com` (PR previews at `/pr-preview/pr-<n>/`)
-- Shared Decap OAuth: [`cms-oauth-kit`](https://github.com/singleton-sd/cms-oauth-kit) at `https://auth.singletonsd.com`
+- Decap GitHub OAuth via API gateway `https://api.singletonsd.com` (`v1/cms-auth`)
 
 ## Quick start
 

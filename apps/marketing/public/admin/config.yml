@@ -1,11 +1,11 @@
 # Decap CMS — git-backed editor for company marketing Markdown.
-# Auth: shared cms-oauth-kit (https://auth.singletonsd.com). Do not add origins here.
+# Auth: API gateway https://api.singletonsd.com (v1/cms-auth). Do not add origins here.
 backend:
   name: github
   repo: singleton-sd/marketing
   branch: main
-  base_url: https://auth.singletonsd.com
-  auth_endpoint: auth
+  base_url: https://api.singletonsd.com
+  auth_endpoint: v1/cms-auth/auth
 
 publish_mode: simple
 
