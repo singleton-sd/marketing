@@ -38,9 +38,13 @@ test('Decap GitHub backend uses API gateway cms-auth', () => {
     join(dirname(fileURLToPath(import.meta.url)), '../../public/admin/config.yml'),
     'utf8',
   );
-  assert.match(yaml, /^  repo: singleton-sd\/marketing$/m);
-  assert.match(yaml, /^  base_url: https:\/\/api\.singletonsd\.com$/m);
-  assert.match(yaml, /^  auth_endpoint: v1\/cms-auth\/auth$/m);
+  const backend = yaml.match(/^backend:\n((?:  .+\n)+)/m)?.[1];
+  assert.ok(backend, 'expected a backend mapping in config.yml');
+  assert.match(backend, /^  name: github$/m);
+  assert.match(backend, /^  repo: singleton-sd\/marketing$/m);
+  assert.match(backend, /^  branch: main$/m);
+  assert.match(backend, /^  base_url: https:\/\/api\.singletonsd\.com$/m);
+  assert.match(backend, /^  auth_endpoint: v1\/cms-auth\/auth$/m);
   assert.doesNotMatch(yaml, /auth\.singletonsd\.com/);
   assert.doesNotMatch(yaml, /azurewebsites\.net/);
   assert.doesNotMatch(yaml, /ssd-mkt-decap-oauth/);
