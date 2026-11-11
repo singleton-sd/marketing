@@ -24,6 +24,7 @@ Shared org app (do not create a second callback on this repo):
 
 - App: [Singleton SD CMS OAuth](https://github.com/settings/applications/3783537)
 - Homepage URL: `https://singletonsd.com`
-- Authorization callback URL: `https://auth.singletonsd.com/callback`
+- Authorization callback URL: `https://api.singletonsd.com/v1/cms-auth/callback`
 
-OAuth Function code, Bicep, and deploy live in [`singleton-sd/cms-oauth-kit`](https://github.com/singleton-sd/cms-oauth-kit). This site’s `config.yml` `base_url` is `https://auth.singletonsd.com`.
+CMS GitHub OAuth is served by the API gateway. This site’s `config.yml`
+`base_url` is `https://api.singletonsd.com` (`auth_endpoint: v1/cms-auth/auth`).

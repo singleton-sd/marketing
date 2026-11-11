@@ -33,14 +33,15 @@ test('resolveOgImageUrl returns relative path when site is missing', () => {
   assert.equal(resolveOgImageUrl('/uploads/og.jpg', undefined, FALLBACK), '/uploads/og.jpg');
 });
 
-test('Decap GitHub backend uses shared cms-oauth-kit', () => {
+test('Decap GitHub backend uses API gateway cms-auth', () => {
   const yaml = readFileSync(
     join(dirname(fileURLToPath(import.meta.url)), '../../public/admin/config.yml'),
     'utf8',
   );
   assert.match(yaml, /^  repo: singleton-sd\/marketing$/m);
-  assert.match(yaml, /^  base_url: https:\/\/auth\.singletonsd\.com$/m);
-  assert.match(yaml, /^  auth_endpoint: auth$/m);
+  assert.match(yaml, /^  base_url: https:\/\/api\.singletonsd\.com$/m);
+  assert.match(yaml, /^  auth_endpoint: v1\/cms-auth\/auth$/m);
+  assert.doesNotMatch(yaml, /auth\.singletonsd\.com/);
   assert.doesNotMatch(yaml, /azurewebsites\.net/);
   assert.doesNotMatch(yaml, /ssd-mkt-decap-oauth/);
 });

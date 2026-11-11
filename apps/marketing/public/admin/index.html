@@ -44,7 +44,7 @@
   <body>
     <!--
       Decap is a static admin SPA. It talks to GitHub, not Astro at runtime.
-      GitHub OAuth requires the shared cms-oauth-kit proxy before non-dev login works.
+      GitHub OAuth uses the API gateway (v1/cms-auth) before non-dev login works.
       Pin exact Decap version: CSS overrides target Emotion class labels that
       drift across releases (see docs/marketing-astro-decap.md).
     -->

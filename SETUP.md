@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - Node 20+ / pnpm 9.15
-- Decap `/admin` login uses shared `cms-oauth-kit` (see `docs/marketing-astro-decap.md`)
+- Decap `/admin` login uses the API gateway (see `docs/marketing-astro-decap.md`)
 
 ## Local
 
@@ -13,7 +13,7 @@
 pnpm install
 pnpm dev
 # http://localhost:4321
-# Admin: http://localhost:4321/admin (shared OAuth at https://auth.singletonsd.com; ORIGINS includes localhost:4321)
+# Admin: http://localhost:4321/admin (OAuth via https://api.singletonsd.com/v1/cms-auth/auth)
 ```
 
 ## Hosting
@@ -25,7 +25,7 @@ records, and Azure SWA deletion order: [`docs/deployment.md`](docs/deployment.md
 | Resource | Name |
 | --- | --- |
 | Pages | `gh-pages` branch, custom domain `www.singletonsd.com` |
-| Decap OAuth | `https://auth.singletonsd.com` (`singleton-sd/cms-oauth-kit`) |
+| Decap OAuth | `https://api.singletonsd.com` (`v1/cms-auth`) |
 | Global Key Vault | `ssd-global-kv-prod-ae` in `rg-ssd-global` (OAuth / other apps — not Pages) |
 | Previous SWA | `ssd-mkt-prod-ae` in `rg-ssd-marketing` — delete last after DNS cutover |
 

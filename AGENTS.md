@@ -18,7 +18,7 @@ ClickUp tickets must include `[repo=singleton-sd/marketing]`.
 | --- | --- |
 | Site | Astro SSG (`apps/marketing`) |
 | CMS | Decap at `/admin` (GitHub backend) |
-| OAuth | Shared `cms-oauth-kit` at `https://auth.singletonsd.com` |
+| OAuth | API gateway `https://api.singletonsd.com` (`v1/cms-auth`) |
 | Host | GitHub Pages (`www.singletonsd.com`, CNAME `singleton-sd.github.io`) |
 | Preview | `/pr-preview/pr-<number>/` on the same custom domain |
 | Assets CDN | `assets.singletonsd.com` (favicons/OG — link only, no binaries in repo) |
@@ -67,6 +67,7 @@ Branch names: `feature/MKT-<n>-slug`, `hotfix/MKT-<n>-slug`, `release/vX.Y.Z`, o
 
 Package tags: `@singleton-sd/marketing@x.y.z`.
 
-Decap `/admin` login uses `singleton-sd/cms-oauth-kit` (`https://auth.singletonsd.com`).
-Shared `ORIGINS` already covers `*.singletonsd.com`, apex, and `localhost:4321`.
-Add origins or deploy OAuth only in that repo — not here.
+Decap `/admin` login uses the API gateway
+(`https://api.singletonsd.com/v1/cms-auth/auth`). Callback is
+`https://api.singletonsd.com/v1/cms-auth/callback` (server-side).
+Add origins or deploy CMS auth only on the gateway — not here.
