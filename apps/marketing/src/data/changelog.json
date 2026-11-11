@@ -2,6 +2,22 @@
   "product": "@singleton-sd/marketing",
   "releases": [
     {
+      "version": "0.7.1",
+      "date": "2026-11-11",
+      "changes": [
+        {
+          "type": "Fixed",
+          "summary": "align CMS auth docs and backend test",
+          "reason": "Point pipeline docs at the API gateway. Assert"
+        },
+        {
+          "type": "Fixed",
+          "summary": "point Decap CMS auth at API gateway",
+          "reason": "Point Decap GitHub backend at api.singletonsd.com"
+        }
+      ]
+    },
+    {
       "version": "0.7.0",
       "date": "2026-11-10",
       "changes": [

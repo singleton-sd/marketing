@@ -2,6 +2,18 @@
 
 Release history for **@singleton-sd/marketing**, generated from conventional commits by the release workflow.
 
+## 0.7.1 — 2026-11-11
+
+### Fixed
+
+- align CMS auth docs and backend test
+
+  Point pipeline docs at the API gateway. Assert
+
+- point Decap CMS auth at API gateway
+
+  Point Decap GitHub backend at api.singletonsd.com
+
 ## 0.7.0 — 2026-11-10
 
 ### New
