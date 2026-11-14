@@ -483,11 +483,11 @@ export function interpretLeadResponse(status, body, headers) {
     return {
       kind: 'retry',
       message: TURNSTILE_FAILED,
-      fieldErrors: { turnstileToken: TURNSTILE_FAILED },
+      fieldErrors: {},
     };
   }
 
-  if (status === 429) {
+  if (status === 429 || status === 503) {
     return { kind: 'retry', message: retryAfterMessage(headers), fieldErrors: {} };
   }
 

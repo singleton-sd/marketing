@@ -37,12 +37,19 @@ const variants = {
     'bg-status-error text-fg-inverse hover:opacity-90 focus-visible:outline-status-error',
 } as const;
 
-const classes = [
-  'inline-flex items-center justify-center rounded-md font-semibold transition',
-  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
+const disabledLook = [
   'disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-bg-muted',
   'disabled:text-fg-subtle disabled:border disabled:border-border',
   'disabled:hover:bg-bg-muted disabled:hover:shadow-none',
+  'aria-disabled:pointer-events-none aria-disabled:cursor-not-allowed aria-disabled:bg-bg-muted',
+  'aria-disabled:text-fg-subtle aria-disabled:border aria-disabled:border-border',
+  'aria-disabled:hover:bg-bg-muted aria-disabled:hover:shadow-none',
+].join(' ');
+
+const classes = [
+  'inline-flex items-center justify-center rounded-md font-semibold transition',
+  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
+  disabledLook,
   sizes[size],
   variants[variant],
   fullWidth ? 'w-full' : '',

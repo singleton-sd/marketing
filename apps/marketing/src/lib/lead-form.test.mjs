@@ -268,7 +268,7 @@ test('interpretLeadResponse maps 202, 400 field lists, 404, and retry statuses',
   assert.equal(interpretLeadResponse(403, { error: 'origin_not_allowed' }).message, GENERIC_RETRY);
   const turnstile = interpretLeadResponse(403, { error: 'turnstile_failed' });
   assert.equal(turnstile.message, TURNSTILE_FAILED);
-  assert.equal(turnstile.fieldErrors.turnstileToken, TURNSTILE_FAILED);
+  assert.equal(turnstile.fieldErrors.turnstileToken, undefined);
   assert.equal(interpretLeadResponse(429, {}).kind, 'retry');
   assert.equal(
     interpretLeadResponse(429, { error: 'rate_limited' }, { 'Retry-After': '30' }).message,
@@ -276,6 +276,10 @@ test('interpretLeadResponse maps 202, 400 field lists, 404, and retry statuses',
   );
   assert.equal(parseRetryAfterSeconds({ 'Retry-After': '1' }), 1);
   assert.equal(interpretLeadResponse(503, { error: 'queue_unavailable' }).kind, 'retry');
+  assert.equal(
+    interpretLeadResponse(503, { error: 'queue_unavailable' }, { 'Retry-After': '15' }).message,
+    'Too many requests. Please try again in 15 seconds.',
+  );
   assert.equal(interpretLeadResponse(500, {}).kind, 'retry');
 });
 
@@ -300,7 +304,10 @@ test('forms post to /v1/leads and never mention PostKit or CRM APIs', () => {
   assert.match(form, /<noscript>/);
   assert.match(form, /mailto:support@singletonsd\.com/);
   assert.match(form, /GENERIC_RETRY/);
+  assert.match(form, /setTurnstileError/);
   assert.doesNotMatch(form, /Check your connection/);
+  const button = readSrc('src/components/ui/Button.astro');
+  assert.match(button, /aria-disabled:/);
   assert.match(form, /cf-turnstile|data-lead-turnstile/);
   assert.match(form, /name=["']website["']/);
   assert.match(form, /name=["']consent["']/);

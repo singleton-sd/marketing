@@ -379,6 +379,7 @@ const reachItems: ReachItem[] = [
       | null;
     const turnstileHost = form.querySelector('[data-lead-turnstile]') as HTMLElement | null;
     const turnstileError = form.querySelector('[data-lead-turnstile-error]');
+    const defaultTurnstileError = (turnstileError?.textContent ?? 'Please complete the bot check.').trim();
     const siteKey = (form.dataset.turnstileSiteKey ?? '').trim();
     const apiUrl = resolveLeadsApiUrl(form.dataset.leadsApi);
     const idleLabel = submitButton?.textContent ?? 'Submit';
@@ -430,12 +431,18 @@ const reachItems: ReachItem[] = [
       ].filter((el): el is Element => el instanceof Element);
     }
 
+    function setTurnstileError(message: string | null) {
+      if (!turnstileError) return;
+      turnstileError.textContent = message ?? defaultTurnstileError;
+      turnstileError.classList.toggle('hidden', !message);
+    }
+
     function applyErrors(errors: Record<string, string | undefined>) {
       for (const el of fieldElements()) {
         const name = (el as HTMLInputElement).name;
         setFieldError(el, errors[name] ?? null);
       }
-      turnstileError?.classList.toggle('hidden', !errors.turnstileToken);
+      setTurnstileError(errors.turnstileToken ?? null);
     }
 
     function showFormError(message: string) {
@@ -466,10 +473,7 @@ const reachItems: ReachItem[] = [
     function showTurnstileIssue(message: string) {
       turnstileToken = '';
       if (submitButton) submitButton.disabled = true;
-      if (turnstileError) {
-        turnstileError.textContent = message;
-        turnstileError.classList.remove('hidden');
-      }
+      setTurnstileError(message);
     }
 
     async function renderTurnstile() {
@@ -485,7 +489,7 @@ const reachItems: ReachItem[] = [
           sitekey: siteKey,
           callback: (token) => {
             turnstileToken = token;
-            turnstileError?.classList.add('hidden');
+            setTurnstileError(null);
             if (submitButton && submitButton.textContent !== 'Sending…') {
               submitButton.disabled = false;
             }

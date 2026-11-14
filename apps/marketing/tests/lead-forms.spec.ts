@@ -14,6 +14,7 @@ async function stubTurnstile(page: Page) {
         window.turnstile = {
           render: function (_el, opts) {
             window.__pwTurnstileCb = opts && opts.callback;
+            window.__pwTurnstileError = opts && opts['error-callback'];
             queueMicrotask(function () {
               if (opts && opts.callback) opts.callback('test-turnstile-token');
             });
@@ -63,6 +64,7 @@ test.beforeEach(async ({ page }) => {
     window.turnstile = {
       render(_el, opts) {
         window.__pwTurnstileCb = opts && opts.callback;
+        window.__pwTurnstileError = opts && opts['error-callback'];
         queueMicrotask(function () {
           if (opts && opts.callback) opts.callback('test-turnstile-token');
         });
@@ -189,8 +191,18 @@ test('contact form maps turnstile_failed and Retry-After', async ({ page }) => {
   await page.goto('/contact/');
   await expect(page.getByRole('button', { name: 'Send message' })).toBeEnabled();
   await fillContact(page);
+  await page.evaluate(() => {
+    window.__pwTurnstileError?.();
+  });
+  await expect(page.getByText('Bot check failed. Please try again.')).toBeVisible();
+  await page.evaluate(() => {
+    window.__pwTurnstileCb?.('test-turnstile-token');
+  });
+  await expect(page.getByRole('button', { name: 'Send message' })).toBeEnabled();
   await page.getByRole('button', { name: 'Send message' }).click();
   await expect(page.getByText('Verification failed. Please try again.')).toBeVisible();
+  await expect(page.getByText('Bot check failed. Please try again.')).toHaveCount(0);
+  await expect(page.getByText('Bot check expired. Please try again.')).toHaveCount(0);
 
   await expect(page.getByRole('button', { name: 'Send message' })).toBeEnabled();
   await page.getByRole('button', { name: 'Send message' }).click();
