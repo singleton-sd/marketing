@@ -270,15 +270,18 @@ test('interpretLeadResponse maps 202, 400 field lists, 404, and retry statuses',
   assert.equal(turnstile.message, TURNSTILE_FAILED);
   assert.equal(turnstile.fieldErrors.turnstileToken, undefined);
   assert.equal(interpretLeadResponse(429, {}).kind, 'retry');
+  assert.equal(interpretLeadResponse(429, {}).message, GENERIC_RETRY);
   assert.equal(
     interpretLeadResponse(429, { error: 'rate_limited' }, { 'Retry-After': '30' }).message,
     'Too many requests. Please try again in 30 seconds.',
   );
   assert.equal(parseRetryAfterSeconds({ 'Retry-After': '1' }), 1);
-  assert.equal(interpretLeadResponse(503, { error: 'queue_unavailable' }).kind, 'retry');
+  const unavailable = interpretLeadResponse(503, { error: 'queue_unavailable' });
+  assert.equal(unavailable.kind, 'retry');
+  assert.equal(unavailable.message, 'Temporarily unavailable. Please try again shortly.');
   assert.equal(
     interpretLeadResponse(503, { error: 'queue_unavailable' }, { 'Retry-After': '15' }).message,
-    'Too many requests. Please try again in 15 seconds.',
+    'Temporarily unavailable. Please try again in 15 seconds.',
   );
   assert.equal(interpretLeadResponse(500, {}).kind, 'retry');
 });
