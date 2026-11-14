@@ -118,20 +118,39 @@ export function isAncestorOfHead(ref) {
 
 /**
  * @param {string[]} [tags]
+ * @returns {ReleaseTag[]}
+ */
+export function reachableReleases(tags = listGitTags()) {
+  return versionsFromTags(PRODUCT, tags).filter((entry) => isAncestorOfHead(entry.tag));
+}
+
+/**
+ * @param {string[]} [tags]
  * @returns {ReleaseTag | null}
  */
 export function latestReachableRelease(tags = listGitTags()) {
-  const reachable = versionsFromTags(PRODUCT, tags).filter((entry) => isAncestorOfHead(entry.tag));
-  return reachable.at(-1) ?? null;
+  return reachableReleases(tags).at(-1) ?? null;
+}
+
+/**
+ * True when the latest reachable tag already points at HEAD — a retry after the
+ * tag push succeeded but the GitHub Release (or Pages dispatch) did not.
+ * @param {ReleaseTag | null} last
+ * @param {string | null | undefined} headSha
+ * @param {string | null | undefined} lastTagSha
+ */
+export function shouldConfirmExistingPublication(last, headSha, lastTagSha) {
+  return Boolean(last && headSha && lastTagSha && headSha === lastTagSha);
 }
 
 /**
  * @param {string | null} sinceTag
+ * @param {string} untilRef
  * @param {string[]} paths
  * @returns {string[]}
  */
-export function getCommitMessages(sinceTag, paths) {
-  const range = sinceTag ? `${sinceTag}..HEAD` : 'HEAD';
+export function getCommitMessagesBetween(sinceTag, untilRef, paths) {
+  const range = sinceTag ? `${sinceTag}..${untilRef}` : untilRef;
   try {
     const out = runGit(['log', range, '--format=%B%x1e', '--', ...paths]);
     if (!out) return [];
@@ -145,6 +164,18 @@ export function getCommitMessages(sinceTag, paths) {
 }
 
 /**
+ * @param {string | null} sinceTag
+ * @param {string[]} paths
+ * @returns {string[]}
+ */
+export function getCommitMessages(sinceTag, paths) {
+  return getCommitMessagesBetween(sinceTag, 'HEAD', paths);
+}
+
+/**
+ * Parse each conventional-commit subject once. A `!` marker on any type, or a
+ * `BREAKING CHANGE:` footer, is major. Type checks use the subject only so
+ * body lines cannot change the bump.
  * @param {string[]} messages
  * @returns {Increment | null}
  */
@@ -157,20 +188,20 @@ export function deriveIncrement(messages) {
     const subject = message.split('\n')[0] ?? '';
     if (/^chore:\s*Release/i.test(subject)) continue;
 
-    if (
-      /^breaking change:/im.test(message) ||
-      /^(feat|fix|perf|refactor)(\([^)]*\))?!:/im.test(message)
-    ) {
+    const match = subject.match(/^([a-z]+)(?:\([^)]*\))?(!)?:\s*(.+)$/i);
+    const breakingFooter = /^breaking change:/im.test(message);
+    if (match?.[2] || breakingFooter) {
       bump = 'major';
       break;
     }
+    if (!match) continue;
 
-    if (/^feat(\([^)]*\))?:/im.test(message)) {
+    const type = match[1].toLowerCase();
+    if (type === 'feat') {
       if (!bump || rank.minor > rank[bump]) bump = 'minor';
       continue;
     }
-
-    if (/^(fix|perf)(\([^)]*\))?:/im.test(message)) {
+    if (type === 'fix' || type === 'perf') {
       if (!bump || rank.patch > rank[bump]) bump = 'patch';
     }
   }
@@ -243,11 +274,14 @@ function incrementLabel(increment) {
 /**
  * @param {string} version
  * @param {string[]} messages
- * @param {Increment} increment
+ * @param {Increment | null} [increment]
  */
-export function formatGitHubReleaseNotes(version, messages, increment) {
+export function formatGitHubReleaseNotes(version, messages, increment = null) {
   const changes = clientFacingChanges(messages);
-  const lines = [`# v${version}`, '', `Semantic bump: **${incrementLabel(increment)}**.`, ''];
+  const lines = [`# v${version}`, ''];
+  if (increment) {
+    lines.push(`Semantic bump: **${incrementLabel(increment)}**.`, '');
+  }
   const order = /** @type {const} */ (['Breaking', 'New', 'Fixed', 'Improved']);
 
   for (const type of order) {

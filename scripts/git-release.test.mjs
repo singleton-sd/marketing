@@ -9,6 +9,7 @@ import {
   formatGitHubReleaseNotes,
   parseReleaseTag,
   planRelease,
+  shouldConfirmExistingPublication,
   tagNameFor,
   tagPushArgs,
   versionsFromTags,
@@ -60,6 +61,30 @@ test('deriveIncrement skips release commits and ranks conventional types', () =>
   assert.equal(deriveIncrement(['fix: Patch form labels', 'feat: Add intake']), 'minor');
   assert.equal(deriveIncrement(['fix: Patch form labels']), 'patch');
   assert.equal(deriveIncrement(['feat!: Replace routing']), 'major');
+});
+
+test('deriveIncrement treats a breaking ! on any conventional type as major', () => {
+  assert.equal(deriveIncrement(['chore!: Remove the old configuration']), 'major');
+  assert.equal(deriveIncrement(['docs!: Rewrite auth']), 'major');
+  assert.equal(deriveIncrement(['chore: tidy', 'feat: Add intake']), 'minor');
+  assert.equal(
+    deriveIncrement(['docs: Explain install\n\nBREAKING CHANGE: Clients must use /v2.']),
+    'major',
+  );
+});
+
+test('deriveIncrement classifies from the subject, not the body', () => {
+  assert.equal(deriveIncrement(['fix: Correct help text\n\nfeat: Add intake']), 'patch');
+  assert.equal(deriveIncrement(['docs: Explain install\n\nfeat: Add intake']), null);
+});
+
+test('shouldConfirmExistingPublication is a retry when the latest tag is HEAD', () => {
+  const last = { tag: 'v0.8.0', version: '0.8.0' };
+  const sha = 'abc123';
+  assert.equal(shouldConfirmExistingPublication(last, sha, sha), true);
+  assert.equal(shouldConfirmExistingPublication(last, sha, 'def456'), false);
+  assert.equal(shouldConfirmExistingPublication(null, sha, sha), false);
+  assert.equal(shouldConfirmExistingPublication(last, sha, null), false);
 });
 
 test('planRelease is tag-only and never names a branch', () => {

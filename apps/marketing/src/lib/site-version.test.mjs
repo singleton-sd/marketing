@@ -3,7 +3,10 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { displayVersionFromDescribe } from '../../../../scripts/git-release.mjs';
+import {
+  displayVersionFromDescribe,
+  latestReachableRelease,
+} from '../../../../scripts/git-release.mjs';
 import { siteVersion } from './site-version.mjs';
 
 const pkg = JSON.parse(
@@ -14,7 +17,11 @@ test('package.json version is a placeholder, not the released version', () => {
   assert.equal(pkg.version, '0.0.0-development');
 });
 
-test('siteVersion comes from git describe, not package.json', () => {
+test('siteVersion comes from git describe, not package.json', (t) => {
+  if (!latestReachableRelease()) {
+    t.skip('no matching release tag is reachable');
+    return;
+  }
   const version = siteVersion();
   assert.notEqual(version, pkg.version);
   assert.match(version, /^\d+\.\d+\.\d+/);
