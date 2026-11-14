@@ -42,8 +42,22 @@ jobs:
       - name: Run tests
         run: pnpm --filter @singleton-sd/marketing run test
 
+      - name: Install Playwright Chromium
+        run: pnpm --filter @singleton-sd/marketing exec playwright install --with-deps chromium
+
+      - name: Playwright lead forms
+        run: |
+          PUBLIC_TURNSTILE_SITE_KEY="${PUBLIC_TURNSTILE_SITE_KEY:-1x00000000000000000000AA}" \
+            pnpm --filter @singleton-sd/marketing run build
+          pnpm --filter @singleton-sd/marketing run test:e2e
+        env:
+          PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}
+
       - name: Build production site
         run: pnpm --filter @singleton-sd/marketing... run build
+        env:
+          PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}
+          PUBLIC_LEADS_API_URL: ${{ vars.PUBLIC_LEADS_API_URL }}
 
       - name: Smoke marketing tokens
         run: pnpm --filter @singleton-sd/marketing run test:smoke

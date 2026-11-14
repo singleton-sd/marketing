@@ -58,21 +58,21 @@ const brandLogoAlt = eyebrow || SITE_NAME;
     <div class="mt-4 max-w-2xl text-base leading-relaxed text-fg-muted empty:hidden">
       <slot />
     </div>
-    <div class="mt-10 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-center">
-      {
-        primaryCta ? (
-          <Button href={primaryCta.href} size="lg">
-            {primaryCta.label}
-          </Button>
-        ) : null
-      }
-      {
-        secondaryCta ? (
-          <Button href={secondaryCta.href} variant="outline" size="lg">
-            {secondaryCta.label}
-          </Button>
-        ) : null
-      }
-    </div>
+    {
+      primaryCta || secondaryCta ? (
+        <div class="mt-10 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-center">
+          {primaryCta ? (
+            <Button href={primaryCta.href} size="lg">
+              {primaryCta.label}
+            </Button>
+          ) : null}
+          {secondaryCta ? (
+            <Button href={secondaryCta.href} variant="outline" size="lg">
+              {secondaryCta.label}
+            </Button>
+          ) : null}
+        </div>
+      ) : null
+    }
   </PageContainer>
 </section>

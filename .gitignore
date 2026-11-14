@@ -15,5 +15,9 @@ coverage/
 *.tsbuildinfo
 .idea/
 .vscode/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
 !.vscode/extensions.json
 apps/marketing/public/admin/vendor/

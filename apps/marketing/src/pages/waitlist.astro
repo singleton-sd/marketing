@@ -1,0 +1,22 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/marketing/Hero.astro';
+import LeadForm from '../components/marketing/LeadForm.astro';
+import { getEntry } from 'astro:content';
+
+const page = await getEntry('pages', 'waitlist');
+if (!page) {
+  throw new Error('Missing content: pages/waitlist');
+}
+const { Content } = await page.render();
+const { title, description, ogImage, brand, headline } = page.data;
+---
+
+<BaseLayout title={title} description={description} ogImage={ogImage}>
+  <Hero eyebrow={brand ?? 'Waitlist'} headline={headline ?? 'Join a waitlist'}>
+    <div class="[&_a]:text-accent [&_p]:m-0 [&_p+p]:mt-3">
+      <Content />
+    </div>
+  </Hero>
+  <LeadForm formType="waitlist" />
+</BaseLayout>

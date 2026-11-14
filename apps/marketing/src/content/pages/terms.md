@@ -1,7 +1,7 @@
 ---
 title: Terms of Service
 description: Terms of Service for singletonsd.com
-updated: '9 August 2026'
+updated: '14 November 2026'
 ---
 
 <p class="callout">
@@ -17,14 +17,14 @@ Development ("Singleton SD", "we," "us," or "our"). By using the Site you agree 
 
 ## 2. The Site
 
-The Site provides company information and links to schedule a Software Discovery Call. It does
-not create a client engagement by itself. Separate statements of work or contracts apply to
-paid services.
+The Site provides company information, a contact form, product waitlists, and links to
+schedule a Software Discovery Call. It does not create a client engagement by itself. Separate
+statements of work or contracts apply to paid services.
 
 ## 3. Acceptable use
 
-You must not misuse the Site (including attempting to disrupt hosting, scrape aggressively, or
-access admin tools without authorisation).
+You must not misuse the Site (including attempting to disrupt hosting, scrape aggressively,
+submit automated spam through the forms, or access admin tools without authorisation).
 
 ## 4. Content
 

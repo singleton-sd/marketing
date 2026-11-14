@@ -8,6 +8,8 @@ interface Props {
   error?: string;
   rows?: number;
   required?: boolean;
+  maxlength?: number;
+  value?: string;
   class?: string;
 }
 
@@ -20,6 +22,8 @@ const {
   error,
   rows = 5,
   required = false,
+  maxlength,
+  value = '',
   class: className = '',
 } = Astro.props;
 
@@ -34,6 +38,7 @@ const describedBy = error ? `${id}-error` : helper ? `${id}-helper` : undefined;
     rows={rows}
     placeholder={placeholder}
     required={required}
+    maxlength={maxlength}
     aria-invalid={error ? 'true' : undefined}
     aria-describedby={describedBy}
     class:list={[
@@ -41,7 +46,7 @@ const describedBy = error ? `${id}-error` : helper ? `${id}-helper` : undefined;
       'focus:border-2 focus:border-accent focus:bg-bg',
       error ? 'border-status-error' : 'border-border',
     ]}
-  ><slot /></textarea>
+  >{value}</textarea>
   {
     error ? (
       <p id={`${id}-error`} class="m-0 text-caption text-status-error">

@@ -1,0 +1,605 @@
+---
+import Alert from '../ui/Alert.astro';
+import Button from '../ui/Button.astro';
+import Checkbox from '../ui/Checkbox.astro';
+import Icon from '../ui/Icon.astro';
+import PageContainer from '../shell/PageContainer.astro';
+import Select from '../ui/Select.astro';
+import TextArea from '../ui/TextArea.astro';
+import TextInput from '../ui/TextInput.astro';
+import { withBase } from '../../lib/with-base.mjs';
+import {
+  CONSENT_TEXT_VERSION,
+  LEAD_LIMITS,
+  LEAD_PRODUCT_LABELS,
+  LEAD_PRODUCTS,
+  resolveLeadsApiUrl,
+} from '../../lib/lead-form.mjs';
+
+interface ReachItem {
+  label: string;
+  value: string;
+  href: string;
+}
+
+interface Props {
+  formType: 'contact' | 'waitlist';
+  discoveryCta?: { label: string; href: string };
+  class?: string;
+}
+
+const { formType, discoveryCta, class: className = '' } = Astro.props;
+const isContact = formType === 'contact';
+const prefix = isContact ? 'contact' : 'waitlist';
+const leadsApiUrl = resolveLeadsApiUrl(import.meta.env.PUBLIC_LEADS_API_URL);
+const turnstileSiteKey = (import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '').trim();
+const privacyHref = withBase('/privacy/', import.meta.env.BASE_URL || '/');
+const submitLabel = isContact ? 'Send message' : 'Join waitlist';
+const successText = isContact
+  ? 'Thanks — your message was sent. We typically respond within 24 hours.'
+  : 'You are on the list. We will email you when there is news.';
+
+const productOptions = [
+  { value: '', label: 'Select a product' },
+  ...LEAD_PRODUCTS.map((value) => ({
+    value,
+    label: LEAD_PRODUCT_LABELS[value as keyof typeof LEAD_PRODUCT_LABELS],
+  })),
+];
+
+const reachItems: ReachItem[] = [
+  {
+    label: 'Email',
+    value: 'support@singletonsd.com',
+    href: 'mailto:support@singletonsd.com',
+  },
+];
+---
+
+<section class:list={['pb-20 pt-4 md:pb-[7.5rem] md:pt-10', className]}>
+  <PageContainer>
+    <div
+      class:list={[
+        'grid items-start gap-10',
+        isContact ? 'lg:grid-cols-[minmax(0,1fr)_23.75rem] lg:gap-16' : '',
+      ]}
+    >
+      <div class="relative">
+        <div data-lead-form-panel>
+          <form
+            class="flex flex-col gap-8"
+            method="post"
+            action="#"
+            novalidate
+            data-lead-form
+            data-form-type={formType}
+            data-leads-api={leadsApiUrl}
+            data-turnstile-site-key={turnstileSiteKey}
+            data-consent-text-version={CONSENT_TEXT_VERSION}
+          >
+            <div data-lead-form-error class="hidden" role="alert">
+              <Alert variant="error">
+                <span data-lead-form-error-text
+                  >Please fix the highlighted fields and try again.</span
+                >
+              </Alert>
+            </div>
+
+            <div class="flex flex-col gap-6">
+              <div class="grid gap-6 md:grid-cols-2">
+                <TextInput
+                  id={`${prefix}-name`}
+                  name="name"
+                  label="Name"
+                  placeholder="e.g. Jane Citizen"
+                  autocomplete="name"
+                  maxlength={LEAD_LIMITS.nameMax}
+                  required
+                />
+                <TextInput
+                  id={`${prefix}-email`}
+                  name="email"
+                  type="email"
+                  label="Email"
+                  placeholder="you@company.com"
+                  autocomplete="email"
+                  maxlength={LEAD_LIMITS.emailMax}
+                  required
+                />
+              </div>
+              {
+                isContact ? (
+                  <div class="grid gap-6 md:grid-cols-2">
+                    <TextInput
+                      id={`${prefix}-company`}
+                      name="company"
+                      label="Company"
+                      placeholder="e.g. Acme Pty Ltd"
+                      autocomplete="organization"
+                      maxlength={LEAD_LIMITS.companyMax}
+                      helper="Optional"
+                    />
+                    <TextInput
+                      id={`${prefix}-phone`}
+                      name="phone"
+                      type="tel"
+                      label="Phone"
+                      placeholder="e.g. +61 400 000 000"
+                      autocomplete="tel"
+                      maxlength={LEAD_LIMITS.phoneMax}
+                      helper="Optional"
+                    />
+                  </div>
+                ) : (
+                  <div class="grid gap-6 md:grid-cols-2">
+                    <Select
+                      id={`${prefix}-product`}
+                      name="product"
+                      label="Product"
+                      options={productOptions}
+                      value=""
+                      required
+                    />
+                    <TextInput
+                      id={`${prefix}-feature`}
+                      name="feature"
+                      label="Feature"
+                      placeholder="e.g. venues waitlist"
+                      maxlength={LEAD_LIMITS.featureMax}
+                      helper="Optional"
+                    />
+                  </div>
+                )
+              }
+              <TextArea
+                id={`${prefix}-message`}
+                name="message"
+                label={isContact ? 'What are you after?' : 'Anything else?'}
+                placeholder={
+                  isContact
+                    ? 'A sentence or two about the problem, product, or outcome.'
+                    : 'Optional — tell us what you want to hear about.'
+                }
+                helper={isContact ? undefined : 'Optional'}
+                rows={5}
+                maxlength={LEAD_LIMITS.messageMax}
+                required={isContact}
+              />
+            </div>
+
+            <div
+              class="lead-honeypot"
+              aria-hidden="true"
+            >
+              <label for={`${prefix}-website`}>Website</label>
+              <input
+                id={`${prefix}-website`}
+                name="website"
+                type="text"
+                tabindex="-1"
+                autocomplete="off"
+              />
+            </div>
+
+            <div class="flex flex-col gap-4">
+              <Checkbox id={`${prefix}-consent`} name="consent" required>
+                I agree to the{' '}
+                <a href={privacyHref} class="text-accent underline-offset-2 hover:underline">
+                  privacy notice
+                </a>
+                .
+              </Checkbox>
+              <Checkbox id={`${prefix}-marketing`} name="marketingOptIn">
+                Send me occasional product updates. Optional, off by default.
+              </Checkbox>
+            </div>
+
+            <div data-lead-turnstile class="min-h-[65px]"></div>
+            <p data-lead-turnstile-error class="hidden m-0 text-caption text-status-error">
+              Please complete the bot check.
+            </p>
+
+            <div class="flex flex-col gap-3">
+              <Button
+                type="submit"
+                size="lg"
+                class="w-full sm:w-[12.5rem]"
+                data-lead-submit
+                disabled
+              >
+                {submitLabel}
+              </Button>
+              <noscript>
+                <p class="m-0 text-caption text-fg-muted">
+                  This form needs JavaScript. Email{' '}
+                  <a
+                    href="mailto:support@singletonsd.com"
+                    class="text-accent underline-offset-2 hover:underline"
+                  >
+                    support@singletonsd.com
+                  </a>{' '}
+                  instead.
+                </p>
+              </noscript>
+              <p class="m-0 text-caption text-fg-muted">
+                {
+                  isContact
+                    ? 'We typically respond within 24 hours.'
+                    : 'We will only email you about the product you pick.'
+                }
+              </p>
+            </div>
+          </form>
+        </div>
+
+        <div data-lead-success class="hidden space-y-4" role="status" tabindex="-1">
+          <Alert variant="success">{successText}</Alert>
+          <div data-lead-reset>
+            <Button type="button" variant="outline" size="lg">
+              {isContact ? 'Send another message' : 'Join another waitlist'}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {
+        isContact && discoveryCta ? (
+          <aside class="flex flex-col gap-8 rounded-xl border border-border bg-bg-muted p-6 md:p-10">
+            <div class="space-y-3">
+              <h2 class="m-0 font-heading text-h3 text-fg">Prefer a conversation?</h2>
+              <p class="m-0 text-body-sm leading-relaxed text-fg-muted">
+                Book a Software Discovery Call and we will map scope, risks, and a practical
+                path to production.
+              </p>
+              <Button href={discoveryCta.href} size="lg" class="w-full sm:w-auto">
+                {discoveryCta.label}
+              </Button>
+            </div>
+            <hr class="m-0 border-0 border-t border-border" />
+            <ul class="m-0 flex list-none flex-col gap-5 p-0">
+              {reachItems.map((item) => (
+                <li class="flex items-center gap-3">
+                  <span class="inline-flex size-5 shrink-0 text-accent" aria-hidden="true">
+                    <Icon name="mail" size={20} />
+                  </span>
+                  <div class="min-w-0">
+                    <p class="m-0 text-[12px] font-bold uppercase tracking-wide text-fg-muted">
+                      {item.label}
+                    </p>
+                    <a
+                      href={item.href}
+                      class="text-body-sm font-semibold text-fg transition hover:text-accent"
+                    >
+                      {item.value}
+                    </a>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </aside>
+        ) : null
+      }
+    </div>
+  </PageContainer>
+</section>
+
+<script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+
+<script>
+  import {
+    GENERIC_RETRY,
+    TEMP_UNAVAILABLE,
+    buildLeadPayload,
+    createSubmissionId,
+    interpretLeadResponse,
+    leadRequestHeaders,
+    resolveLeadsApiUrl,
+  } from '../../lib/lead-form.mjs';
+
+  const FETCH_TIMEOUT_MS = 15_000;
+  const TURNSTILE_WAIT_MS = 15_000;
+
+  type TurnstileApi = {
+    render: (
+      container: HTMLElement,
+      options: {
+        sitekey: string;
+        callback: (token: string) => void;
+        'error-callback'?: () => void;
+        'expired-callback'?: () => void;
+      },
+    ) => string;
+    reset: (widgetId?: string) => void;
+  };
+
+  declare global {
+    interface Window {
+      turnstile?: TurnstileApi;
+    }
+  }
+
+  function waitForTurnstile(): Promise<TurnstileApi> {
+    if (window.turnstile?.render) {
+      return Promise.resolve(window.turnstile);
+    }
+    return new Promise((resolve, reject) => {
+      const started = Date.now();
+      const timer = window.setInterval(() => {
+        if (window.turnstile?.render) {
+          window.clearInterval(timer);
+          resolve(window.turnstile);
+        } else if (Date.now() - started > TURNSTILE_WAIT_MS) {
+          window.clearInterval(timer);
+          reject(new Error('turnstile timeout'));
+        }
+      }, 50);
+    });
+  }
+
+  function setFieldError(field: Element, message: string | null) {
+    const id = field.id;
+    const wrapper = field.closest('div.flex.w-full.flex-col') ?? field.parentElement;
+    const existing = document.getElementById(`${id}-error`);
+    const helper = document.getElementById(`${id}-helper`);
+    if (existing) existing.remove();
+
+    field.removeAttribute('aria-invalid');
+    field.removeAttribute('aria-describedby');
+    const borderHost = field.tagName === 'INPUT' && field.getAttribute('type') !== 'checkbox'
+      ? field.parentElement
+      : field;
+    borderHost?.classList.remove('border-status-error');
+    helper?.classList.remove('hidden');
+    if (helper) field.setAttribute('aria-describedby', helper.id);
+
+    if (!message || !wrapper) return;
+
+    const errorId = `${id}-error`;
+    field.setAttribute('aria-invalid', 'true');
+    field.setAttribute('aria-describedby', errorId);
+    borderHost?.classList.add('border-status-error');
+    helper?.classList.add('hidden');
+    const error = document.createElement('p');
+    error.id = errorId;
+    error.className = 'm-0 text-caption text-status-error';
+    error.textContent = message;
+    wrapper.appendChild(error);
+  }
+
+  function bindForm(form: HTMLFormElement) {
+    const formType = form.dataset.formType === 'waitlist' ? 'waitlist' : 'contact';
+    const formPanel = form.closest('[data-lead-form-panel]');
+    const root = formPanel?.parentElement ?? form.parentElement;
+    const successPanel = root?.querySelector('[data-lead-success]');
+    const formError = form.querySelector('[data-lead-form-error]');
+    const formErrorText = form.querySelector('[data-lead-form-error-text]');
+    const resetButton = root?.querySelector('[data-lead-reset] button');
+    const submitButton = form.querySelector('[data-lead-submit], button[type="submit"]') as
+      | HTMLButtonElement
+      | null;
+    const turnstileHost = form.querySelector('[data-lead-turnstile]') as HTMLElement | null;
+    const turnstileError = form.querySelector('[data-lead-turnstile-error]');
+    const defaultTurnstileError = (turnstileError?.textContent ?? 'Please complete the bot check.').trim();
+    const siteKey = (form.dataset.turnstileSiteKey ?? '').trim();
+    const apiUrl = resolveLeadsApiUrl(form.dataset.leadsApi);
+    const idleLabel = submitButton?.textContent ?? 'Submit';
+    let submissionId = createSubmissionId();
+    let turnstileToken = '';
+    let widgetId: string | undefined;
+    let attemptedSubmit = false;
+
+    const named = (name: string) => form.elements.namedItem(name);
+
+    function readFields(): Parameters<typeof buildLeadPayload>[0] {
+      const consent = named('consent') as HTMLInputElement | null;
+      const marketing = named('marketingOptIn') as HTMLInputElement | null;
+      const website = named('website') as HTMLInputElement | null;
+      const product = named('product') as HTMLSelectElement | null;
+      const feature = named('feature') as HTMLInputElement | null;
+      const phone = named('phone') as HTMLInputElement | null;
+      const company = named('company') as HTMLInputElement | null;
+      const message = named('message') as HTMLTextAreaElement | null;
+      return {
+        formType,
+        submissionId,
+        origin: location.origin,
+        pathname: location.pathname,
+        name: (named('name') as HTMLInputElement | null)?.value ?? '',
+        email: (named('email') as HTMLInputElement | null)?.value ?? '',
+        company: company?.value ?? '',
+        phone: phone?.value ?? '',
+        message: message?.value ?? '',
+        feature: feature?.value ?? '',
+        product: product?.value ?? '',
+        consent: Boolean(consent?.checked),
+        marketingOptIn: Boolean(marketing?.checked),
+        turnstileToken,
+        website: website?.value ?? '',
+      };
+    }
+
+    function fieldElements(): Array<Element> {
+      return [
+        named('name'),
+        named('email'),
+        named('company'),
+        named('phone'),
+        named('message'),
+        named('feature'),
+        named('product'),
+        named('consent'),
+      ].filter((el): el is Element => el instanceof Element);
+    }
+
+    function setTurnstileError(message: string | null) {
+      if (!turnstileError) return;
+      turnstileError.textContent = message ?? defaultTurnstileError;
+      turnstileError.classList.toggle('hidden', !message);
+    }
+
+    function applyErrors(errors: Record<string, string | undefined>) {
+      for (const el of fieldElements()) {
+        const name = (el as HTMLInputElement).name;
+        setFieldError(el, errors[name] ?? null);
+      }
+      setTurnstileError(errors.turnstileToken ?? null);
+    }
+
+    function showFormError(message: string) {
+      if (formErrorText) formErrorText.textContent = message;
+      formError?.classList.remove('hidden');
+    }
+
+    function hideFormError() {
+      formError?.classList.add('hidden');
+    }
+
+    function setSubmitting(isSubmitting: boolean) {
+      if (!submitButton) return;
+      submitButton.disabled = isSubmitting || !turnstileToken;
+      submitButton.textContent = isSubmitting ? 'Sending…' : idleLabel;
+    }
+
+    function resetTurnstile() {
+      turnstileToken = '';
+      if (widgetId && window.turnstile?.reset) {
+        window.turnstile.reset(widgetId);
+      }
+      if (submitButton && submitButton.textContent !== 'Sending…') {
+        submitButton.disabled = true;
+      }
+    }
+
+    function showTurnstileIssue(message: string) {
+      turnstileToken = '';
+      if (submitButton) submitButton.disabled = true;
+      setTurnstileError(message);
+    }
+
+    async function renderTurnstile() {
+      if (!turnstileHost) return;
+      if (!siteKey) {
+        showFormError('Bot verification is not configured.');
+        if (submitButton) submitButton.disabled = true;
+        return;
+      }
+      try {
+        const api = await waitForTurnstile();
+        widgetId = api.render(turnstileHost, {
+          sitekey: siteKey,
+          callback: (token) => {
+            turnstileToken = token;
+            setTurnstileError(null);
+            if (submitButton && submitButton.textContent !== 'Sending…') {
+              submitButton.disabled = false;
+            }
+          },
+          'error-callback': () => {
+            showTurnstileIssue('Bot check failed. Please try again.');
+          },
+          'expired-callback': () => {
+            showTurnstileIssue('Bot check expired. Please try again.');
+          },
+        });
+      } catch {
+        showFormError('Bot verification is temporarily unavailable. Please try again later.');
+        if (submitButton) submitButton.disabled = true;
+      }
+    }
+
+    if (submitButton) submitButton.disabled = true;
+    void renderTurnstile();
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      attemptedSubmit = true;
+      const payload = buildLeadPayload(readFields());
+      applyErrors(payload.errors);
+      if (!payload.ok || !payload.value) {
+        showFormError('Please fix the highlighted fields and try again.');
+        return;
+      }
+      hideFormError();
+      setSubmitting(true);
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: leadRequestHeaders(),
+          credentials: 'omit',
+          signal: controller.signal,
+          body: JSON.stringify(payload.value),
+        });
+        let body: unknown = null;
+        try {
+          body = await response.json();
+        } catch {
+          body = null;
+        }
+        const result = interpretLeadResponse(response.status, body, response.headers);
+        if (result.kind === 'success') {
+          formPanel?.classList.add('hidden');
+          successPanel?.classList.remove('hidden');
+          hideFormError();
+          if (successPanel instanceof HTMLElement) successPanel.focus();
+          return;
+        }
+        applyErrors(result.fieldErrors);
+        showFormError(result.message);
+        resetTurnstile();
+      } catch (err) {
+        const timedOut = err instanceof DOMException && err.name === 'AbortError';
+        showFormError(timedOut ? TEMP_UNAVAILABLE : GENERIC_RETRY);
+        resetTurnstile();
+      } finally {
+        window.clearTimeout(timeoutId);
+        setSubmitting(false);
+        if (!turnstileToken && submitButton) submitButton.disabled = true;
+      }
+    });
+
+    for (const el of fieldElements()) {
+      el.addEventListener('blur', () => {
+        if (!attemptedSubmit) return;
+        const payload = buildLeadPayload(readFields());
+        applyErrors(payload.errors);
+      });
+      el.addEventListener('input', () => {
+        if (!attemptedSubmit) return;
+        const payload = buildLeadPayload(readFields());
+        applyErrors(payload.errors);
+      });
+      el.addEventListener('change', () => {
+        if (!attemptedSubmit) return;
+        const payload = buildLeadPayload(readFields());
+        applyErrors(payload.errors);
+      });
+    }
+
+    resetButton?.addEventListener('click', () => {
+      attemptedSubmit = false;
+      form.reset();
+      submissionId = createSubmissionId();
+      applyErrors({});
+      hideFormError();
+      successPanel?.classList.add('hidden');
+      formPanel?.classList.remove('hidden');
+      resetTurnstile();
+    });
+  }
+
+  for (const form of document.querySelectorAll<HTMLFormElement>('[data-lead-form]')) {
+    bindForm(form);
+  }
+</script>
+
+<style>
+  .lead-honeypot {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+</style>

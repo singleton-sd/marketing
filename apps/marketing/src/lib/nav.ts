@@ -25,6 +25,7 @@ export const footerColumns: { title: string; links: NavLink[] }[] = [
     links: [
       { label: 'About', href: '/about' },
       { label: 'Contact', href: '/contact' },
+      { label: 'Waitlist', href: '/waitlist' },
     ],
   },
   {

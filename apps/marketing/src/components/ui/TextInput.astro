@@ -10,6 +10,8 @@ interface Props {
   value?: string;
   suffix?: string;
   required?: boolean;
+  autocomplete?: string;
+  maxlength?: number;
   class?: string;
 }
 
@@ -24,6 +26,8 @@ const {
   value,
   suffix,
   required = false,
+  autocomplete,
+  maxlength,
   class: className = '',
 } = Astro.props;
 
@@ -47,6 +51,8 @@ const describedBy = error ? `${id}-error` : helper ? `${id}-helper` : undefined;
       placeholder={placeholder}
       value={value}
       required={required}
+      autocomplete={autocomplete}
+      maxlength={maxlength}
       aria-invalid={error ? 'true' : undefined}
       aria-describedby={describedBy}
       class="min-w-0 flex-1 border-0 bg-transparent p-0 text-fg outline-none placeholder:text-fg-subtle"

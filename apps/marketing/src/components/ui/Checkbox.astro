@@ -2,18 +2,20 @@
 interface Props {
   id: string;
   name?: string;
-  label: string;
+  label?: string;
   checked?: boolean;
   value?: string;
+  required?: boolean;
   class?: string;
 }
 
 const {
   id,
   name = id,
-  label,
+  label = '',
   checked = false,
   value = 'on',
+  required = false,
   class: className = '',
 } = Astro.props;
 ---
@@ -25,7 +27,10 @@ const {
     type="checkbox"
     value={value}
     checked={checked}
+    required={required}
     class="mt-0.5 size-4 shrink-0 rounded-sm border border-border accent-accent"
   />
-  <span>{label}</span>
+  <span>
+    <slot>{label}</slot>
+  </span>
 </label>
