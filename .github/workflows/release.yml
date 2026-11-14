@@ -1,7 +1,8 @@
 # Path-aware release: bump workspace package versions on main.
-# Skips when the push is already a release commit (avoids loops).
-# After a bump, explicitly workflow_dispatch pages.yml —
-# GITHUB_TOKEN pushes do not trigger other workflows (GitHub recursion guard).
+# The singleton-release GitHub App pushes the bump commit (it is on the main
+# ruleset bypass list). Skip loops when the head commit is itself a release
+# (`chore(release)` or `[skip ci]`). Then dispatch pages.yml — `[skip ci]`
+# and GitHub's recursion guard mean the release push does not run Pages.
 name: Release
 
 on:
@@ -14,23 +15,54 @@ concurrency:
 
 jobs:
   release:
-    if: "${{ !startsWith(github.event.head_commit.message, 'chore: Release') }}"
+    if: ${{ !startsWith(github.event.head_commit.message, 'chore(release)') && !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
     name: Bump package versions
     permissions:
-      contents: write
-      actions: write
+      contents: read
     steps:
-      - uses: actions/checkout@v4
+      - name: Require singleton-release GitHub App credentials
+        env:
+          RELEASE_APP_ID: ${{ vars.RELEASE_APP_ID }}
+          RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          missing=()
+          if [ -z "${RELEASE_APP_ID:-}" ]; then
+            missing+=('RELEASE_APP_ID')
+          fi
+          if [ -z "${RELEASE_APP_PRIVATE_KEY:-}" ]; then
+            missing+=('RELEASE_APP_PRIVATE_KEY')
+          fi
+          if [ "${#missing[@]}" -ne 0 ]; then
+            echo "::error::Missing GitHub App credentials: ${missing[*]}. Set vars.RELEASE_APP_ID and secrets.RELEASE_APP_PRIVATE_KEY for the singleton-release app. Never fall back to GITHUB_TOKEN."
+            exit 1
+          fi
+
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          owner: singleton-sd
+          repositories: marketing
+          permission-contents: write
+          permission-actions: write
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-tags: true
+          token: ${{ steps.app-token.outputs.token }}
+          # Keep the write token out of git config until the Release step.
+          persist-credentials: false
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
           version: 9.15.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24
           cache: pnpm
@@ -39,40 +71,29 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Configure git identity
+        env:
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
         run: |
           set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${APP_SLUG}[bot]@users.noreply.github.com"
 
       - name: Release changed packages
         id: release
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
-          tmp=$(mktemp)
-          set +e
-          pnpm release:ci 2>&1 | tee "$tmp"
-          status=${PIPESTATUS[0]}
-          set -e
-          if [ "$status" -ne 0 ]; then
-            exit "$status"
-          fi
-          if grep -q 'Nothing to release' "$tmp"; then
-            echo "released=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          if grep -q 'Release commit and tags pushed' "$tmp"; then
-            echo "released=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          echo "::error::Unexpected release:ci output (no release push and not empty)."
-          exit 1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          git remote set-url origin \
+            "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          pnpm release:ci
 
       - name: Dispatch production deploys
         if: steps.release.outputs.released == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
         run: |
           set -euo pipefail
           git fetch origin main
@@ -82,17 +103,5 @@ jobs:
             echo "::error::Local HEAD ($HEAD_SHA) does not match origin/main ($MAIN_SHA) after release push."
             exit 1
           fi
-          mapfile -t files < <(git show --name-only --pretty=format: "$HEAD_SHA")
-          echo "Release commit $HEAD_SHA on main — files:"
-          printf '%s\n' "${files[@]}"
-          dispatch=false
-          for f in "${files[@]}"; do
-            if [ "$f" = 'apps/marketing/package.json' ]; then
-              echo "Dispatching pages.yml @ main ($HEAD_SHA)"
-              gh workflow run pages.yml --ref main
-              dispatch=true
-            fi
-          done
-          if [ "$dispatch" = false ]; then
-            echo "No marketing package.json in release commit — skipping deploys."
-          fi
+          echo "Dispatching pages.yml @ main after ${RELEASE_TAG} ($HEAD_SHA)"
+          gh workflow run pages.yml --ref main

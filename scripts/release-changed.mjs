@@ -4,41 +4,53 @@
  *
  * Bumps each workspace package that has releasable conventional commits since
  * its last `@scope/name@version` tag (reachable from HEAD), then creates one
- * git commit + per-package tags.
+ * git commit + per-package tags + GitHub Releases.
  *
  * Push order is commit-then-tags (never `--follow-tags`): a non-fast-forward
  * race must not publish tags without the release commit on main.
  *
  * Usage:
  *   node scripts/release-changed.mjs           # dry-run
- *   node scripts/release-changed.mjs --ci      # bump, commit, tag, push
+ *   node scripts/release-changed.mjs --ci      # bump, commit, tag, push, GitHub Release
  */
-import { execFileSync, execSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
+import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { join, relative } from 'node:path';
 import semver from 'semver';
 import { CLIENT_CHANGELOG_TARGETS, updateClientChangelogs } from './client-changelog.mjs';
+import {
+  PACKAGE_PREFIX,
+  PRODUCT,
+  ROOT,
+  deriveIncrement,
+  formatGitHubReleaseNotes,
+  formatReleaseCommitMessage,
+  getCommitMessages,
+  getCommitMessagesBetween,
+  isAncestorOfHead,
+  latestReachableRelease,
+  listGitTags,
+  nextFreeVersion,
+  pushCommitToMain,
+  runGit,
+  selectRetryTargets,
+  tagNameFor,
+  tagPushArgs,
+  versionsFromTags,
+} from './git-release.mjs';
 
-const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const CI = process.argv.includes('--ci');
-const RELEASE_SUBJECT = 'chore: Release package versions';
-const PACKAGE_PREFIX = '@singleton-sd/';
 
 /** @typedef {'major' | 'minor' | 'patch'} Increment */
 
 /**
- * @param {string} command
- * @param {import('node:child_process').ExecSyncOptions} [options]
+ * @param {string} name
+ * @param {string} value
  */
-function sh(command, options = {}) {
-  const out = execSync(command, {
-    cwd: ROOT,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-    ...options,
-  });
-  return typeof out === 'string' ? out.trim() : '';
+function setOutput(name, value) {
+  const file = process.env.GITHUB_OUTPUT;
+  if (!file) return;
+  appendFileSync(file, `${name}=${value}\n`);
 }
 
 /**
@@ -59,7 +71,7 @@ function run(file, args, options = {}) {
  * @returns {{ name: string, path: string, version: string }[]}
  */
 function listWorkspacePackages() {
-  const raw = sh('pnpm m ls --json -r --depth -1');
+  const raw = run('pnpm', ['m', 'ls', '--json', '-r', '--depth', '-1']);
   /** @type {unknown} */
   const parsed = JSON.parse(raw || '[]');
   const list = Array.isArray(parsed) ? parsed : [parsed];
@@ -86,56 +98,25 @@ function listWorkspacePackages() {
 }
 
 /**
- * True when `ref` is an ancestor of HEAD (tag commit is on this branch history).
- * @param {string} ref
- */
-function isAncestorOfHead(ref) {
-  try {
-    run('git', ['merge-base', '--is-ancestor', ref, 'HEAD']);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Highest semver tag for the package that is reachable from HEAD.
  * @param {string} packageName
+ * @param {string[]} tags
  * @returns {string | null}
  */
-function getLastTag(packageName) {
-  const tags = sh(`git tag -l "${packageName}@*" --sort=-v:refname`)
-    .split('\n')
-    .map((t) => t.trim())
-    .filter(Boolean);
-  for (const tag of tags) {
-    if (isAncestorOfHead(tag)) return tag;
-  }
-  return null;
-}
-
-/**
- * @param {string} packageName
- * @param {string | null} tag
- * @returns {string | null}
- */
-function versionFromTag(packageName, tag) {
-  if (!tag) return null;
-  const prefix = `${packageName}@`;
-  if (!tag.startsWith(prefix)) return null;
-  const version = tag.slice(prefix.length);
-  return semver.valid(version) ? version : null;
+function getLastTag(packageName, tags) {
+  const reachable = versionsFromTags(packageName, tags).filter((entry) =>
+    isAncestorOfHead(entry.tag),
+  );
+  return reachable.at(-1)?.tag ?? null;
 }
 
 /**
  * @param {string} tag
  */
-function tagExists(tag) {
+function commitForTag(tag) {
   try {
-    run('git', ['rev-parse', '-q', '--verify', `refs/tags/${tag}`]);
-    return true;
+    return runGit(['rev-parse', `${tag}^{commit}`]);
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -148,7 +129,7 @@ function watchPathsFor(pkg) {
   const rel = relative(ROOT, pkg.path).replace(/\\/g, '/');
   const paths = [rel];
 
-  if (pkg.name === '@singleton-sd/marketing') {
+  if (pkg.name === PRODUCT) {
     paths.push('infra/marketing.bicep', 'infra/global.bicep');
   }
 
@@ -156,100 +137,21 @@ function watchPathsFor(pkg) {
 }
 
 /**
- * @param {string | null} sinceTag
- * @param {string[]} paths
- * @returns {string[]}
- */
-function getCommitMessages(sinceTag, paths) {
-  const range = sinceTag ? `${sinceTag}..HEAD` : 'HEAD';
-  const args = ['log', range, '--format=%B%x1e', '--'];
-  args.push(...paths);
-  try {
-    const out = run('git', args);
-    if (!out) return [];
-    return out
-      .split('\x1e')
-      .map((m) => m.trim())
-      .filter(Boolean);
-  } catch {
-    return [];
-  }
-}
-
-/**
- * @param {string[]} messages
- * @returns {Increment | null}
- */
-function deriveIncrement(messages) {
-  /** @type {Increment | null} */
-  let bump = null;
-  const rank = { patch: 1, minor: 2, major: 3 };
-
-  for (const message of messages) {
-    const subject = message.split('\n')[0] ?? '';
-    if (/^chore:\s*Release/i.test(subject)) continue;
-
-    if (
-      /^breaking change:/im.test(message) ||
-      /^(feat|fix|perf|refactor)(\([^)]*\))?!:/im.test(message)
-    ) {
-      bump = 'major';
-      break;
-    }
-
-    if (/^feat(\([^)]*\))?:/im.test(message)) {
-      if (!bump || rank.minor > rank[bump]) bump = 'minor';
-      continue;
-    }
-
-    if (/^(fix|perf)(\([^)]*\))?:/im.test(message)) {
-      if (!bump || rank.patch > rank[bump]) bump = 'patch';
-    }
-  }
-
-  return bump;
-}
-
-/**
- * @param {string} current
- * @param {Increment} increment
- */
-function nextVersion(current, increment) {
-  const base = semver.valid(current) ? current : '0.0.0';
-  const next = semver.inc(base, increment);
-  if (!next) {
-    throw new Error(`Failed to bump ${current} with ${increment}`);
-  }
-  return next;
-}
-
-/**
  * @param {string} packageName
  * @param {string} packageVersion
  * @param {string | null} lastTag
  * @param {Increment} increment
+ * @param {string[]} tags
  * @returns {{ base: string, next: string, tag: string }}
  */
-function resolveNextVersion(packageName, packageVersion, lastTag, increment) {
-  const tagVersion = versionFromTag(packageName, lastTag);
+function resolveNextVersion(packageName, packageVersion, lastTag, increment, tags) {
+  const tagVersion = lastTag ? versionsFromTags(packageName, [lastTag])[0]?.version : null;
   const candidates = [packageVersion, tagVersion].filter(
-    (v) => typeof v === 'string' && Boolean(semver.valid(v)),
+    (version) => typeof version === 'string' && Boolean(semver.valid(version)),
   );
-  let base = candidates.length > 0 ? candidates.sort(semver.rcompare)[0] : '0.0.0';
-
-  const from = base;
-
-  for (let i = 0; i < 50; i += 1) {
-    const next = nextVersion(base, increment);
-    const tag = `${packageName}@${next}`;
-    if (!tagExists(tag)) {
-      return { base: from, next, tag };
-    }
-    console.warn(`Tag ${tag} already exists — skipping to next ${increment}.`);
-    base = next;
-  }
-
-  throw new Error(`Could not find a free version for ${packageName} after ${base}`);
+  const from = candidates.length > 0 ? candidates.sort(semver.rcompare)[0] : '0.0.0';
+  const next = nextFreeVersion(from, increment, tags, packageName);
+  return { base: from, next, tag: tagNameFor(packageName, next) };
 }
 
 /**
@@ -261,10 +163,10 @@ function updateChangelog(releases) {
   const section = [
     `## ${date}`,
     '',
-    ...releases.map((r) => {
-      const target = CLIENT_CHANGELOG_TARGETS[r.name];
-      const name = target ? `[${r.name}](${target.markdown})` : r.name;
-      return `- **${name}** \`${r.version}\` → \`${r.next}\` (${r.increment})`;
+    ...releases.map((release) => {
+      const target = CLIENT_CHANGELOG_TARGETS[release.name];
+      const name = target ? `[${release.name}](${target.markdown})` : release.name;
+      return `- **${name}** \`${release.version}\` → \`${release.next}\` (${release.increment})`;
     }),
     '',
   ].join('\n');
@@ -289,53 +191,119 @@ function writePackageVersion(packagePath, version) {
   writeFileSync(pkgJsonPath, `${JSON.stringify(pkg, null, 2)}\n`);
 }
 
-/**
- * Sync to origin/main before computing bumps so concurrent pushes do not
- * release from a stale tip.
- */
 function syncToOriginMain() {
-  run('git', ['fetch', 'origin', 'main', '--tags']);
-  const head = run('git', ['rev-parse', 'HEAD']);
-  const main = run('git', ['rev-parse', 'origin/main']);
+  runGit(['fetch', 'origin', 'main', '--tags']);
+  const head = runGit(['rev-parse', 'HEAD']);
+  const main = runGit(['rev-parse', 'origin/main']);
   if (head === main) return;
   console.log(`Updating HEAD ${head.slice(0, 7)} → origin/main ${main.slice(0, 7)}`);
-  run('git', ['reset', '--hard', 'origin/main']);
+  runGit(['reset', '--hard', 'origin/main']);
 }
 
 /**
- * Push the release commit only (no tags).
+ * @param {string} tag
  */
-function pushReleaseCommit() {
-  const maxAttempts = 3;
-  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    try {
-      run('git', ['push', 'origin', 'HEAD:main']);
-      return;
-    } catch (error) {
-      if (attempt === maxAttempts) throw error;
-      console.log(
-        `Push rejected (attempt ${attempt}/${maxAttempts}); rebasing onto origin/main...`,
-      );
-      run('git', ['fetch', 'origin', 'main']);
-      run('git', ['pull', '--rebase', '--autostash', 'origin', 'main']);
-    }
+function githubReleaseExists(tag) {
+  try {
+    run('gh', ['release', 'view', tag, '--json', 'tagName']);
+    return true;
+  } catch {
+    return false;
   }
 }
 
 /**
- * Create and push annotated tags only after HEAD is on origin/main.
+ * @param {string} tag
+ * @param {string} notes
+ */
+function ensureGitHubRelease(tag, notes) {
+  if (githubReleaseExists(tag)) {
+    console.log(`GitHub Release ${tag} already exists.`);
+    return;
+  }
+  run('gh', [
+    'release',
+    'create',
+    tag,
+    '--title',
+    tag,
+    '--notes',
+    notes,
+    '--verify-tag',
+  ]);
+}
+
+/**
+ * @param {string} tag
+ * @param {string} sha
+ */
+function ensureAnnotatedTag(tag, sha) {
+  const existing = commitForTag(tag);
+  if (existing && existing !== sha) {
+    throw new Error(`Tag ${tag} points at ${existing}, expected ${sha}`);
+  }
+  if (!existing) {
+    runGit(['tag', '-a', tag, '-m', tag, sha]);
+  }
+  run('git', tagPushArgs(tag));
+}
+
+/**
+ * @param {{ name: string, version: string, tag: string, path: string }} pkg
  * @param {string[]} tags
  */
-function createAndPushTags(tags) {
-  for (const tag of tags) {
-    if (tagExists(tag)) {
-      run('git', ['tag', '-d', tag]);
+function notesForPackage(pkg, tags) {
+  const previous = versionsFromTags(pkg.name, tags)
+    .filter((entry) => entry.version !== pkg.version && isAncestorOfHead(entry.tag))
+    .at(-1);
+  const until = commitForTag(pkg.tag) ? pkg.tag : 'HEAD';
+  const messages = getCommitMessagesBetween(previous?.tag ?? null, until, watchPathsFor(pkg));
+  return formatGitHubReleaseNotes(pkg.version, messages, deriveIncrement(messages));
+}
+
+/**
+ * @param {{ name: string, version: string, tag: string, path: string }[]} packages
+ * @param {string[]} tags
+ * @param {string} headSha
+ */
+function confirmExistingPublication(packages, tags, headSha) {
+  if (!CI) {
+    console.log('HEAD is already a release; would confirm tags and GitHub Releases:');
+    for (const pkg of packages) {
+      console.log(`  ${pkg.tag}`);
     }
-    run('git', ['tag', '-a', tag, '-m', tag]);
+    return false;
   }
-  if (tags.length > 0) {
-    run('git', ['push', 'origin', ...tags]);
+
+  for (const pkg of packages) {
+    ensureAnnotatedTag(pkg.tag, headSha);
+    ensureGitHubRelease(pkg.tag, notesForPackage(pkg, tags));
   }
+
+  const primary = packages.find((pkg) => pkg.name === PRODUCT) ?? packages[0];
+  console.log(`Confirmed GitHub Release ${primary.tag}.`);
+  setOutput('released', 'true');
+  setOutput('tag', primary.tag);
+  return true;
+}
+
+/**
+ * @param {string[]} tags
+ * @param {string} headSha
+ * @param {string} headMessage
+ * @returns {boolean}
+ */
+function retryExistingPublicationIfNeeded(tags, headSha, headMessage) {
+  const targets = selectRetryTargets({
+    packages: listWorkspacePackages(),
+    lastFor: (name) => latestReachableRelease(tags, name),
+    lastTagShaFor: (tag) => commitForTag(tag),
+    headSha,
+    headMessage,
+  });
+  if (targets.length === 0) return false;
+  confirmExistingPublication(targets, tags, headSha);
+  return true;
 }
 
 function main() {
@@ -343,9 +311,18 @@ function main() {
     syncToOriginMain();
   }
 
+  const tags = listGitTags();
+  const headSha = runGit(['rev-parse', 'HEAD']);
+  const headMessage = runGit(['log', '-1', '--format=%B']);
+
+  if (retryExistingPublicationIfNeeded(tags, headSha, headMessage)) {
+    return;
+  }
+
   const packages = listWorkspacePackages();
   if (packages.length === 0) {
     console.log('No workspace packages found.');
+    setOutput('released', 'false');
     return;
   }
 
@@ -353,13 +330,13 @@ function main() {
   const releases = [];
 
   for (const pkg of packages) {
-    const lastTag = getLastTag(pkg.name);
+    const lastTag = getLastTag(pkg.name, tags);
     const paths = watchPathsFor(pkg);
     const messages = getCommitMessages(lastTag, paths);
     const increment = deriveIncrement(messages);
     if (!increment) continue;
 
-    const resolved = resolveNextVersion(pkg.name, pkg.version, lastTag, increment);
+    const resolved = resolveNextVersion(pkg.name, pkg.version, lastTag, increment, tags);
     releases.push({
       name: pkg.name,
       path: pkg.path,
@@ -373,16 +350,21 @@ function main() {
 
   if (releases.length === 0) {
     console.log('Nothing to release.');
+    setOutput('released', 'false');
     return;
   }
 
   console.log(CI ? 'Releasing:' : 'Dry-run — would release:');
-  for (const r of releases) {
-    console.log(`  ${r.name}: ${r.version} → ${r.next} (${r.increment}) [${r.tag}]`);
+  for (const release of releases) {
+    console.log(`  ${release.name}: ${release.version} → ${release.next} (${release.increment}) [${release.tag}]`);
   }
 
   if (!CI) {
-    console.log('\nRe-run with --ci to bump, commit, tag, and push.');
+    console.log('\nRe-run with --ci to bump, commit, tag, push, and publish GitHub Releases.');
+    console.log('\nNotes:\n');
+    for (const release of releases) {
+      console.log(formatGitHubReleaseNotes(release.next, release.messages, release.increment));
+    }
     return;
   }
 
@@ -393,8 +375,7 @@ function main() {
   updateChangelog(releases);
   updateClientChangelogs(ROOT, releases, new Date().toISOString().slice(0, 10));
 
-  const body = releases.map((r) => `- ${r.tag}`).join('\n');
-  const message = `${RELEASE_SUBJECT}\n\n${body}\n`;
+  const message = formatReleaseCommitMessage(releases);
 
   for (const release of releases) {
     run('git', ['add', join(release.path, 'package.json')]);
@@ -404,14 +385,24 @@ function main() {
     const targets = CLIENT_CHANGELOG_TARGETS[release.name];
     if (targets) run('git', ['add', targets.markdown, targets.data]);
   }
-  // Release commits are auto-generated; bypass hooks (ticket rule).
   run('git', ['commit', '-m', message], {
     env: { ...process.env, HUSKY: '0' },
   });
 
-  pushReleaseCommit();
-  createAndPushTags(releases.map((r) => r.tag));
+  const releaseSha = pushCommitToMain();
+
+  for (const release of releases) {
+    ensureAnnotatedTag(release.tag, releaseSha);
+    ensureGitHubRelease(
+      release.tag,
+      formatGitHubReleaseNotes(release.next, release.messages, release.increment),
+    );
+  }
+
+  const primary = releases.find((release) => release.name === PRODUCT) ?? releases[0];
   console.log('Release commit and tags pushed.');
+  setOutput('released', 'true');
+  setOutput('tag', primary.tag);
 }
 
 main();

@@ -55,8 +55,8 @@ non-breaking `refactor:` do not create a public entry or version bump.
 2. It calculates the semantic version bump and uses the same commits to prepend the new
    marketing release to `apps/marketing/CHANGELOG.md`.
 3. It regenerates `apps/marketing/src/data/changelog.json` from that Markdown.
-4. It updates the root version-bump index, commits all release files, and then creates the
-   annotated product tags.
+4. It updates the root version-bump index, commits all release files, then creates the
+   annotated product tags and GitHub Release.
 5. CI can run `pnpm changelog:test` and `pnpm changelog:check` to reject malformed or
    stale projections.
 

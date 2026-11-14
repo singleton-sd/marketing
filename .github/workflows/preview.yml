@@ -25,18 +25,18 @@ jobs:
       contents: read
     steps:
       - name: Check out repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
         with:
           version: 9.15.0
           run_install: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
           cache: pnpm
@@ -72,7 +72,7 @@ jobs:
         run: node scripts/check-pages-asset-paths.mjs apps/marketing/dist /pr-preview/pr-${{ github.event.number }}/
 
       - name: Upload preview dist
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: preview-dist-${{ github.event.number }}
           path: apps/marketing/dist
@@ -94,7 +94,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Check out repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Set preview URLs
         id: urls
@@ -102,7 +102,7 @@ jobs:
           echo "preview_url=https://www.singletonsd.com/pr-preview/pr-${{ github.event.number }}/" >> "$GITHUB_OUTPUT"
 
       - name: Download preview dist
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: preview-dist-${{ github.event.number }}
           path: apps/marketing/dist
@@ -110,7 +110,7 @@ jobs:
       - name: Deploy preview
         id: preview
         continue-on-error: true
-        uses: rossjrw/pr-preview-action@v1.8.1
+        uses: rossjrw/pr-preview-action@ffa7509e91a3ec8dfc2e5536c4d5c1acdf7a6de9 # v1.8.1
         with:
           source-dir: apps/marketing/dist
           preview-branch: gh-pages
@@ -120,7 +120,7 @@ jobs:
 
       - name: Retry deploy preview
         if: steps.preview.outcome == 'failure'
-        uses: rossjrw/pr-preview-action@v1.8.1
+        uses: rossjrw/pr-preview-action@ffa7509e91a3ec8dfc2e5536c4d5c1acdf7a6de9 # v1.8.1
         with:
           source-dir: apps/marketing/dist
           preview-branch: gh-pages
@@ -131,7 +131,7 @@ jobs:
       - name: Post sticky preview comment
         id: preview_comment
         continue-on-error: true
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@773744901bac0e8cbb5a0dc842800d45e9b2b405 # v2.9.4
         with:
           header: marketing-preview
           recreate: true
@@ -148,7 +148,7 @@ jobs:
 
       - name: Retry sticky preview comment
         if: steps.preview_comment.outcome == 'failure'
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@773744901bac0e8cbb5a0dc842800d45e9b2b405 # v2.9.4
         with:
           header: marketing-preview
           recreate: true
@@ -177,11 +177,11 @@ jobs:
       pull-requests: write
     steps:
       - name: Check out repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Confirm pull request is still closed
         id: pr_state
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           script: |
             const { data } = await github.rest.pulls.get({
@@ -198,7 +198,7 @@ jobs:
         id: remove_preview
         if: steps.pr_state.outputs.closed == 'true'
         continue-on-error: true
-        uses: rossjrw/pr-preview-action@v1.8.1
+        uses: rossjrw/pr-preview-action@ffa7509e91a3ec8dfc2e5536c4d5c1acdf7a6de9 # v1.8.1
         with:
           action: remove
           source-dir: apps/marketing/dist
@@ -209,7 +209,7 @@ jobs:
 
       - name: Retry remove preview
         if: steps.pr_state.outputs.closed == 'true' && steps.remove_preview.outcome == 'failure'
-        uses: rossjrw/pr-preview-action@v1.8.1
+        uses: rossjrw/pr-preview-action@ffa7509e91a3ec8dfc2e5536c4d5c1acdf7a6de9 # v1.8.1
         with:
           action: remove
           source-dir: apps/marketing/dist
@@ -222,14 +222,14 @@ jobs:
         id: hide_comment
         if: steps.pr_state.outputs.closed == 'true'
         continue-on-error: true
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@773744901bac0e8cbb5a0dc842800d45e9b2b405 # v2.9.4
         with:
           header: marketing-preview
           hide: true
 
       - name: Retry hide sticky preview comment
         if: steps.pr_state.outputs.closed == 'true' && steps.hide_comment.outcome == 'failure'
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@773744901bac0e8cbb5a0dc842800d45e9b2b405 # v2.9.4
         with:
           header: marketing-preview
           hide: true
