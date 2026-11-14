@@ -1,7 +1,8 @@
-# Path-aware release: bump workspace package versions on main.
-# Skips when the push is already a release commit (avoids loops).
-# After a bump, explicitly workflow_dispatch pages.yml —
-# GITHUB_TOKEN pushes do not trigger other workflows (GitHub recursion guard).
+# Tag-only release: never commits or pushes to main.
+# On push to main, compute the next vX.Y.Z from existing tags + conventional
+# commits, push that tag, and create a GitHub Release. Then dispatch pages.yml
+# so the production build sees the new tag via git describe (GITHUB_TOKEN tag
+# pushes do not trigger other workflows).
 name: Release
 
 on:
@@ -14,9 +15,8 @@ concurrency:
 
 jobs:
   release:
-    if: "${{ !startsWith(github.event.head_commit.message, 'chore: Release') }}"
     runs-on: ubuntu-latest
-    name: Bump package versions
+    name: Tag and GitHub Release
     permissions:
       contents: write
       actions: write
@@ -24,6 +24,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          fetch-tags: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: pnpm/action-setup@v4
@@ -44,30 +45,12 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Release changed packages
+      - name: Tag and publish GitHub Release
         id: release
-        run: |
-          set -euo pipefail
-          tmp=$(mktemp)
-          set +e
-          pnpm release:ci 2>&1 | tee "$tmp"
-          status=${PIPESTATUS[0]}
-          set -e
-          if [ "$status" -ne 0 ]; then
-            exit "$status"
-          fi
-          if grep -q 'Nothing to release' "$tmp"; then
-            echo "released=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          if grep -q 'Release commit and tags pushed' "$tmp"; then
-            echo "released=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          echo "::error::Unexpected release:ci output (no release push and not empty)."
-          exit 1
+        run: pnpm release:ci
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Dispatch production deploys
         if: steps.release.outputs.released == 'true'
@@ -75,24 +58,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          git fetch origin main
-          HEAD_SHA=$(git rev-parse HEAD)
-          MAIN_SHA=$(git rev-parse origin/main)
-          if [ "$HEAD_SHA" != "$MAIN_SHA" ]; then
-            echo "::error::Local HEAD ($HEAD_SHA) does not match origin/main ($MAIN_SHA) after release push."
-            exit 1
-          fi
-          mapfile -t files < <(git show --name-only --pretty=format: "$HEAD_SHA")
-          echo "Release commit $HEAD_SHA on main — files:"
-          printf '%s\n' "${files[@]}"
-          dispatch=false
-          for f in "${files[@]}"; do
-            if [ "$f" = 'apps/marketing/package.json' ]; then
-              echo "Dispatching pages.yml @ main ($HEAD_SHA)"
-              gh workflow run pages.yml --ref main
-              dispatch=true
-            fi
-          done
-          if [ "$dispatch" = false ]; then
-            echo "No marketing package.json in release commit — skipping deploys."
-          fi
+          tag="${{ steps.release.outputs.tag }}"
+          echo "Dispatching pages.yml @ main after ${tag}"
+          gh workflow run pages.yml --ref main

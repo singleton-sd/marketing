@@ -45,8 +45,8 @@ are often detached/behind). Do not rely on a dirty or stale worktree.
 pnpm install
 pnpm dev
 pnpm --filter @singleton-sd/marketing build
-pnpm release          # dry-run path-aware package bumps
-pnpm release:ci       # bump, CHANGELOG, commit, tag, push (CI only)
+pnpm release          # dry-run the next vX.Y.Z tag + GitHub Release notes
+pnpm release:ci       # tag + GitHub Release only (CI; never commits or pushes main)
 pnpm changelog:test   # client-facing changelog unit tests
 pnpm changelog:check  # MD ↔ JSON projection drift check
 ```
@@ -57,7 +57,7 @@ pnpm changelog:check  # MD ↔ JSON projection drift check
 | --- | --- |
 | husky | Hooks: commit-msg, pre-commit, post-checkout |
 | commitlint | Conventional commits + `MKT-<n>` ticket rule (`.commitlintrc.cjs`) |
-| `scripts/release-changed.mjs` | Path-aware SemVer bumps per `@singleton-sd/*` package |
+| `scripts/release-changed.mjs` | Tag-only `vX.Y.Z` + GitHub Release from conventional commits |
 | `scripts/client-changelog.mjs` | Client-facing `/changelog` Markdown + JSON projections |
 | release-it | Available for manual/single-package use (`.release-it.json`; git/GitHub off) |
 | Root `CHANGELOG.md` | Date sections with package bump index |
@@ -65,7 +65,8 @@ pnpm changelog:check  # MD ↔ JSON projection drift check
 
 Branch names: `feature/MKT-<n>-slug`, `hotfix/MKT-<n>-slug`, `release/vX.Y.Z`, or `main`.
 
-Package tags: `@singleton-sd/marketing@x.y.z`.
+Release tags: `vX.Y.Z` (legacy `@singleton-sd/marketing@x.y.z` tags are still
+read when computing the next version).
 
 Decap `/admin` login uses the API gateway
 (`https://api.singletonsd.com/v1/cms-auth/auth`). Callback is

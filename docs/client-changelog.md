@@ -1,18 +1,17 @@
 # Client-facing changelog workflow
 
 The marketing site publishes release notes from the same conventional commit messages
-that drive version bumps. The product changelog is a generated file; contributors should
-describe the user-visible change and its reason in the commit message instead of editing
-a release section by hand.
+that drive `vX.Y.Z` tags. Contributors should describe the user-visible change and its
+reason in the commit message instead of editing a release section by hand.
 
 ## Where release notes appear
 
-| Product | Canonical history | Client-facing projection | Published location |
+| Product | Canonical history | Committed snapshot / fallback | Published location |
 | --- | --- | --- | --- |
-| Marketing | `apps/marketing/CHANGELOG.md` | `apps/marketing/src/data/changelog.json` | `/changelog` |
+| Marketing | `vX.Y.Z` git tags + GitHub Releases | `apps/marketing/CHANGELOG.md` / `changelog.json` | `/changelog` |
 
-The root `CHANGELOG.md` remains the workspace-level version-bump index. It links to the
-product history but is not its source.
+The root `CHANGELOG.md` remains a historical workspace bump index. It is not updated by
+the tag-only release workflow.
 
 ## Write a client-facing commit
 
@@ -48,17 +47,19 @@ Keep the subject understandable without internal context, and use the body to an
 trailers are not selected as the reason. Commits such as `docs:`, `test:`, `chore:`, and
 non-breaking `refactor:` do not create a public entry or version bump.
 
-## How a release updates the files
+## How a release publishes notes
 
-1. The release orchestrator finds changed workspaces and reads conventional commits since
-   each workspace's latest tag.
-2. It calculates the semantic version bump and uses the same commits to prepend the new
-   marketing release to `apps/marketing/CHANGELOG.md`.
-3. It regenerates `apps/marketing/src/data/changelog.json` from that Markdown.
-4. It updates the root version-bump index, commits all release files, and then creates the
-   annotated product tags.
-5. CI can run `pnpm changelog:test` and `pnpm changelog:check` to reject malformed or
-   stale projections.
+Releases are tag-only: CI does not commit changelog files or push to `main`.
+
+1. The release orchestrator reads conventional commits since the latest reachable
+   `vX.Y.Z` (or legacy `@singleton-sd/marketing@x.y.z`) tag.
+2. It calculates the semantic bump, pushes an annotated `vX.Y.Z` tag, and creates a
+   GitHub Release whose notes come from those commits.
+3. `/changelog` is generated at build time from the same git tags, so What’s new stays
+   current without a version-bump commit. `apps/marketing/CHANGELOG.md` and
+   `changelog.json` remain a committed snapshot / fallback.
+4. CI can run `pnpm changelog:test` and `pnpm changelog:check` to reject malformed or
+   stale committed projections.
 
 Only commits touching `apps/marketing/**` (plus related watch paths) are included.
 
