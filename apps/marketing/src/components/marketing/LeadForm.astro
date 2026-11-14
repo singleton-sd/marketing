@@ -68,6 +68,8 @@ const reachItems: ReachItem[] = [
         <div data-lead-form-panel>
           <form
             class="flex flex-col gap-8"
+            method="post"
+            action="#"
             novalidate
             data-lead-form
             data-form-type={formType}
@@ -198,9 +200,27 @@ const reachItems: ReachItem[] = [
             </p>
 
             <div class="flex flex-col gap-3">
-              <Button type="submit" size="lg" class="w-full sm:w-[12.5rem]" data-lead-submit>
+              <Button
+                type="submit"
+                size="lg"
+                class="w-full sm:w-[12.5rem]"
+                data-lead-submit
+                disabled
+              >
                 {submitLabel}
               </Button>
+              <noscript>
+                <p class="m-0 text-caption text-fg-muted">
+                  This form needs JavaScript. Email{' '}
+                  <a
+                    href="mailto:support@singletonsd.com"
+                    class="text-accent underline-offset-2 hover:underline"
+                  >
+                    support@singletonsd.com
+                  </a>{' '}
+                  instead.
+                </p>
+              </noscript>
               <p class="m-0 text-caption text-fg-muted">
                 {
                   isContact
@@ -267,6 +287,8 @@ const reachItems: ReachItem[] = [
 
 <script>
   import {
+    GENERIC_RETRY,
+    TEMP_UNAVAILABLE,
     buildLeadPayload,
     createSubmissionId,
     interpretLeadResponse,
@@ -441,6 +463,15 @@ const reachItems: ReachItem[] = [
       }
     }
 
+    function showTurnstileIssue(message: string) {
+      turnstileToken = '';
+      if (submitButton) submitButton.disabled = true;
+      if (turnstileError) {
+        turnstileError.textContent = message;
+        turnstileError.classList.remove('hidden');
+      }
+    }
+
     async function renderTurnstile() {
       if (!turnstileHost) return;
       if (!siteKey) {
@@ -460,12 +491,10 @@ const reachItems: ReachItem[] = [
             }
           },
           'error-callback': () => {
-            turnstileToken = '';
-            if (submitButton) submitButton.disabled = true;
+            showTurnstileIssue('Bot check failed. Please try again.');
           },
           'expired-callback': () => {
-            turnstileToken = '';
-            if (submitButton) submitButton.disabled = true;
+            showTurnstileIssue('Bot check expired. Please try again.');
           },
         });
       } catch {
@@ -504,7 +533,7 @@ const reachItems: ReachItem[] = [
         } catch {
           body = null;
         }
-        const result = interpretLeadResponse(response.status, body);
+        const result = interpretLeadResponse(response.status, body, response.headers);
         if (result.kind === 'success') {
           formPanel?.classList.add('hidden');
           successPanel?.classList.remove('hidden');
@@ -517,11 +546,7 @@ const reachItems: ReachItem[] = [
         resetTurnstile();
       } catch (err) {
         const timedOut = err instanceof DOMException && err.name === 'AbortError';
-        showFormError(
-          timedOut
-            ? 'This form is temporarily unavailable. Please try again later.'
-            : 'We could not reach the server. Check your connection and try again.',
-        );
+        showFormError(timedOut ? TEMP_UNAVAILABLE : GENERIC_RETRY);
         resetTurnstile();
       } finally {
         window.clearTimeout(timeoutId);

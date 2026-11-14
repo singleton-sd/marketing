@@ -45,7 +45,7 @@ async function fillContact(page: Page) {
   await page.getByLabel('Email').fill('ada@example.com');
   await page.getByLabel('Company').fill('Analytical Engines');
   await page.getByLabel('Phone').fill('+61 400 000 000');
-  await page.getByLabel('What are you after?').fill('Please get in touch about a project.');
+  await page.getByLabel('What are you after?').fill('Hello,\nPlease contact me.');
   await page.getByRole('checkbox', { name: /I agree to the/ }).check();
 }
 
@@ -54,6 +54,7 @@ async function fillWaitlist(page: Page) {
   await page.getByLabel('Email').fill('ada@example.com');
   await page.getByLabel('Product', { exact: true }).selectOption('inkads');
   await page.getByLabel('Feature').fill('venues waitlist');
+  await page.getByLabel('Anything else?').fill('Hello,\nPlease contact me.');
   await page.getByRole('checkbox', { name: /I agree to the/ }).check();
 }
 
@@ -102,7 +103,7 @@ test('contact form posts a job-kit contact payload and shows success', async ({ 
   expect(payload.sourceSite).toBe('https://www.singletonsd.com');
   expect(payload.name).toBe('Ada Lovelace');
   expect(payload.email).toBe('ada@example.com');
-  expect(payload.message).toBe('Please get in touch about a project.');
+  expect(payload.message).toBe('Hello,\nPlease contact me.');
   expect(payload.consent).toBe(true);
   expect(payload.consentTextVersion).toBe('ssd-privacy-v1');
   expect(payload.marketingOptIn).toBe(false);
@@ -144,6 +145,58 @@ test('contact form shows API field errors and a generic retry on 5xx', async ({ 
   await expect(page.getByText('We could not send your message. Please try again shortly.')).toBeVisible();
 });
 
+test('contact submit is disabled in the initial HTML without JavaScript', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  const response = await page.goto('/contact/');
+  const raw = (await response?.text()) ?? '';
+  expect(raw).toMatch(/method="post"/);
+  expect(raw).toMatch(/action="#"/);
+  expect(raw).toMatch(/<button[^>]*type="submit"[^>]*disabled/);
+  expect(raw).toContain('<noscript>');
+  expect(raw).toContain('This form needs JavaScript');
+  expect(raw).toContain('mailto:support@singletonsd.com');
+  await expect(page.getByRole('button', { name: 'Send message' })).toBeDisabled();
+  await context.close();
+});
+
+test('contact form maps turnstile_failed and Retry-After', async ({ page }) => {
+  let calls = 0;
+  await mockLeads(page, async (route) => {
+    calls += 1;
+    if (calls === 1) {
+      await route.fulfill({
+        status: 403,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'turnstile_failed' }),
+      });
+      return;
+    }
+    await route.fulfill({
+      status: 429,
+      headers: {
+        'Content-Type': 'application/json',
+        'Retry-After': '30',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Expose-Headers': 'Retry-After',
+      },
+      body: JSON.stringify({ error: 'rate_limited' }),
+    });
+  });
+
+  await page.goto('/contact/');
+  await expect(page.getByRole('button', { name: 'Send message' })).toBeEnabled();
+  await fillContact(page);
+  await page.getByRole('button', { name: 'Send message' }).click();
+  await expect(page.getByText('Verification failed. Please try again.')).toBeVisible();
+
+  await expect(page.getByRole('button', { name: 'Send message' })).toBeEnabled();
+  await page.getByRole('button', { name: 'Send message' }).click();
+  await expect(page.getByText('Too many requests. Please try again in 30 seconds.')).toBeVisible();
+});
+
 test('waitlist form posts product payload and treats function_disabled as unavailable', async ({
   page,
 }) => {
@@ -179,6 +232,7 @@ test('waitlist form posts product payload and treats function_disabled as unavai
   expect(first.formType).toBe('waitlist');
   expect(first.product).toBe('inkads');
   expect(first.feature).toBe('venues waitlist');
+  expect(first.message).toBe('Hello,\nPlease contact me.');
   expect(first.sourceSite).toBe('https://www.singletonsd.com');
   expect(typeof first.submissionId).toBe('string');
 

@@ -62,10 +62,14 @@ export const TEMP_UNAVAILABLE =
 
 export const GENERIC_RETRY = 'We could not send your message. Please try again shortly.';
 
+export const TURNSTILE_FAILED = 'Verification failed. Please try again.';
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const CONTROLS_RE = /[\u0000-\u001f\u007f]/;
+/** Textareas may include tab, LF, and CR; other C0 controls stay rejected. */
+const MESSAGE_CONTROLS_RE = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/;
 
 /**
  * @param {string | undefined} value
@@ -129,6 +133,14 @@ function hasControls(value) {
 }
 
 /**
+ * @param {string} value
+ * @returns {boolean}
+ */
+function hasMessageControls(value) {
+  return MESSAGE_CONTROLS_RE.test(value);
+}
+
+/**
  * @typedef {{
  *   name?: string;
  *   email?: string;
@@ -183,10 +195,10 @@ export function validateLeadFields(input) {
 
   const message = asTrimmedString(raw.message);
   if (formType === 'contact') {
-    if (!message || message.length > LEAD_LIMITS.messageMax || hasControls(message)) {
+    if (!message || message.length > LEAD_LIMITS.messageMax || hasMessageControls(message)) {
       errors.message = FIELD_MESSAGES.message;
     }
-  } else if (message && (message.length > LEAD_LIMITS.messageMax || hasControls(message))) {
+  } else if (message && (message.length > LEAD_LIMITS.messageMax || hasMessageControls(message))) {
     errors.message = FIELD_MESSAGES.message;
   }
 
@@ -371,8 +383,69 @@ export function fieldErrorsFromApiBody(body) {
 }
 
 /**
+ * @param {unknown} headers
+ * @returns {string}
+ */
+function retryAfterHeader(headers) {
+  if (!headers || typeof headers !== 'object') return '';
+  const wanted = 'retry-after';
+  const withGet = /** @type {{ get?: (key: string) => unknown; forEach?: Function }} */ (headers);
+  if (typeof withGet.get === 'function') {
+    const value = withGet.get('Retry-After') ?? withGet.get('retry-after');
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  if (typeof withGet.forEach === 'function') {
+    let found = '';
+    withGet.forEach((value, key) => {
+      if (String(key).toLowerCase() === wanted && typeof value === 'string') {
+        found = value.trim();
+      }
+    });
+    if (found) return found;
+  }
+  for (const [key, value] of Object.entries(headers)) {
+    if (key.toLowerCase() === wanted && typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+  }
+  return '';
+}
+
+/**
+ * @param {unknown} headers
+ * @returns {number | undefined}
+ */
+export function parseRetryAfterSeconds(headers) {
+  const raw = retryAfterHeader(headers);
+  if (!raw) return undefined;
+  if (/^\d+$/.test(raw)) {
+    const seconds = Number.parseInt(raw, 10);
+    return Number.isFinite(seconds) && seconds > 0 ? seconds : undefined;
+  }
+  const dateMs = Date.parse(raw);
+  if (Number.isNaN(dateMs)) return undefined;
+  const seconds = Math.ceil((dateMs - Date.now()) / 1000);
+  return seconds > 0 ? seconds : undefined;
+}
+
+/**
+ * @param {unknown} headers
+ * @returns {string}
+ */
+export function retryAfterMessage(headers) {
+  const seconds = parseRetryAfterSeconds(headers);
+  if (!seconds) return GENERIC_RETRY;
+  if (seconds < 60) {
+    return `Too many requests. Please try again in ${seconds} second${seconds === 1 ? '' : 's'}.`;
+  }
+  const minutes = Math.ceil(seconds / 60);
+  return `Too many requests. Please try again in ${minutes} minute${minutes === 1 ? '' : 's'}.`;
+}
+
+/**
  * @param {number} status
  * @param {unknown} body
+ * @param {unknown} [headers]
  * @returns {{
  *   kind: 'success' | 'invalid' | 'unavailable' | 'retry';
  *   message: string;
@@ -380,7 +453,7 @@ export function fieldErrorsFromApiBody(body) {
  *   id?: string;
  * }}
  */
-export function interpretLeadResponse(status, body) {
+export function interpretLeadResponse(status, body, headers) {
   if (status === 202) {
     const id =
       body && typeof body === 'object' && !Array.isArray(body) && typeof body.id === 'string'
@@ -406,7 +479,19 @@ export function interpretLeadResponse(status, body) {
     return { kind: 'unavailable', message: TEMP_UNAVAILABLE, fieldErrors: {} };
   }
 
-  if (status === 403 || status === 429 || status >= 500) {
+  if (status === 403 && errorCode === 'turnstile_failed') {
+    return {
+      kind: 'retry',
+      message: TURNSTILE_FAILED,
+      fieldErrors: { turnstileToken: TURNSTILE_FAILED },
+    };
+  }
+
+  if (status === 429) {
+    return { kind: 'retry', message: retryAfterMessage(headers), fieldErrors: {} };
+  }
+
+  if (status === 403 || status >= 500) {
     return { kind: 'retry', message: GENERIC_RETRY, fieldErrors: {} };
   }
 

@@ -12,11 +12,13 @@ import {
   GENERIC_RETRY,
   LEAD_LIMITS,
   TEMP_UNAVAILABLE,
+  TURNSTILE_FAILED,
   VALIDATION_SUMMARY,
   buildLeadPayload,
   createSubmissionId,
   fieldErrorsFromApiBody,
   interpretLeadResponse,
+  parseRetryAfterSeconds,
   resolveLeadsApiUrl,
   resolveSourcePage,
   resolveSourceSite,
@@ -130,6 +132,35 @@ test('waitlist requires a product from the shared allowlist', () => {
   assert.equal(ok.ok, true);
 });
 
+test('contact and waitlist messages allow newlines and tabs', () => {
+  const multiline = 'Hello,\nPlease contact me.\tThanks';
+  const contact = buildLeadPayload(contactFields({ message: multiline }));
+  assert.equal(contact.ok, true);
+  assert.equal(contact.value.message, multiline);
+
+  const waitlist = buildLeadPayload(waitlistFields({ message: multiline }));
+  assert.equal(waitlist.ok, true);
+  assert.equal(waitlist.value.message, multiline);
+});
+
+test('message still rejects other control characters; single-line fields stay strict', () => {
+  const nul = validateLeadFields(contactFields({ message: 'Hello\u0000there' }));
+  assert.equal(nul.ok, false);
+  assert.equal(nul.errors.message, FIELD_MESSAGES.message);
+
+  const nameNewline = validateLeadFields(contactFields({ name: 'Ada\nLovelace' }));
+  assert.equal(nameNewline.ok, false);
+  assert.equal(nameNewline.errors.name, FIELD_MESSAGES.name);
+
+  const emailNewline = validateLeadFields(contactFields({ email: 'ada\n@example.com' }));
+  assert.equal(emailNewline.ok, false);
+  assert.equal(emailNewline.errors.email, FIELD_MESSAGES.email);
+
+  const companyTab = validateLeadFields(contactFields({ company: 'Acme\tPty' }));
+  assert.equal(companyTab.ok, false);
+  assert.equal(companyTab.errors.company, FIELD_MESSAGES.company);
+});
+
 test('buildLeadPayload matches the job-kit contact schema exactly', () => {
   const result = buildLeadPayload(contactFields());
   assert.equal(result.ok, true);
@@ -235,7 +266,15 @@ test('interpretLeadResponse maps 202, 400 field lists, 404, and retry statuses',
   assert.equal(disabled.message, TEMP_UNAVAILABLE);
 
   assert.equal(interpretLeadResponse(403, { error: 'origin_not_allowed' }).message, GENERIC_RETRY);
+  const turnstile = interpretLeadResponse(403, { error: 'turnstile_failed' });
+  assert.equal(turnstile.message, TURNSTILE_FAILED);
+  assert.equal(turnstile.fieldErrors.turnstileToken, TURNSTILE_FAILED);
   assert.equal(interpretLeadResponse(429, {}).kind, 'retry');
+  assert.equal(
+    interpretLeadResponse(429, { error: 'rate_limited' }, { 'Retry-After': '30' }).message,
+    'Too many requests. Please try again in 30 seconds.',
+  );
+  assert.equal(parseRetryAfterSeconds({ 'Retry-After': '1' }), 1);
   assert.equal(interpretLeadResponse(503, { error: 'queue_unavailable' }).kind, 'retry');
   assert.equal(interpretLeadResponse(500, {}).kind, 'retry');
 });
@@ -255,6 +294,13 @@ test('forms post to /v1/leads and never mention PostKit or CRM APIs', () => {
   const combined = `${contactPage}\n${waitlistPage}\n${form}\n${lib}`;
 
   assert.match(form, /data-lead-form/);
+  assert.match(form, /method=["']post["']/);
+  assert.match(form, /action=["']#["']/);
+  assert.match(form, /data-lead-submit[\s\S]{0,120}disabled/);
+  assert.match(form, /<noscript>/);
+  assert.match(form, /mailto:support@singletonsd\.com/);
+  assert.match(form, /GENERIC_RETRY/);
+  assert.doesNotMatch(form, /Check your connection/);
   assert.match(form, /cf-turnstile|data-lead-turnstile/);
   assert.match(form, /name=["']website["']/);
   assert.match(form, /name=["']consent["']/);
