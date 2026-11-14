@@ -1,6 +1,6 @@
 {
   "name": "@singleton-sd/marketing",
-  "version": "0.0.0-development",
+  "version": "0.7.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,7 +9,7 @@
     "build": "node ./scripts/copy-token-css.mjs && astro build",
     "preview": "astro preview",
     "lint": "astro check",
-    "test": "node --test src/lib/site.test.mjs src/lib/with-base.test.mjs src/lib/lead-form.test.mjs src/lib/site-version.test.mjs scripts/smoke-tokens.test.mjs ../../scripts/check-pages-asset-paths.test.mjs ../../scripts/git-release.test.mjs && astro check",
+    "test": "node --test src/lib/site.test.mjs src/lib/with-base.test.mjs src/lib/lead-form.test.mjs scripts/smoke-tokens.test.mjs ../../scripts/check-pages-asset-paths.test.mjs && astro check",
     "test:e2e": "playwright test",
     "test:smoke": "node ./scripts/smoke-tokens.mjs",
     "test:pages-paths": "node ../../scripts/check-pages-asset-paths.mjs dist /"

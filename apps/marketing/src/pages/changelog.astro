@@ -1,9 +1,7 @@
 ---
-import { loadMarketingChangelog } from '../lib/changelog-from-git.mjs';
+import { changelog } from '../data/changelog';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { withBase } from '../lib/with-base.mjs';
-
-const changelog = loadMarketingChangelog();
 
 const homeHref = withBase('/', import.meta.env.BASE_URL || '/');
 ---

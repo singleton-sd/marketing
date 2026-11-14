@@ -21,20 +21,6 @@ test('selects and semantically orders tags for one product', () => {
   );
 });
 
-test('includes vX.Y.Z tags and prefers them over legacy product tags', () => {
-  assert.deepEqual(
-    versionsFromTags('@singleton-sd/marketing', [
-      '@singleton-sd/marketing@0.7.1',
-      'v0.7.1',
-      'v0.8.0',
-    ]),
-    [
-      { tag: 'v0.7.1', version: '0.7.1' },
-      { tag: 'v0.8.0', version: '0.8.0' },
-    ],
-  );
-});
-
 test('rejects a partial clone before it can truncate existing history', () => {
   assert.throws(
     () =>

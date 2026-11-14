@@ -1,34 +1,46 @@
 #!/usr/bin/env node
 /**
- * Tag-only product releases. Never commits, and never pushes a branch
- * (including `main`).
+ * Path-aware independent releases for the pnpm monorepo.
+ *
+ * Bumps each workspace package that has releasable conventional commits since
+ * its last `@scope/name@version` tag (reachable from HEAD), then creates one
+ * git commit + per-package tags + GitHub Releases.
+ *
+ * Push order is commit-then-tags (never `--follow-tags`): a non-fast-forward
+ * race must not publish tags without the release commit on main.
  *
  * Usage:
  *   node scripts/release-changed.mjs           # dry-run
- *   node scripts/release-changed.mjs --ci      # annotated vX.Y.Z tag + GitHub Release
+ *   node scripts/release-changed.mjs --ci      # bump, commit, tag, push, GitHub Release
  */
 import { execFileSync } from 'node:child_process';
-import { appendFileSync } from 'node:fs';
+import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { join, relative } from 'node:path';
+import semver from 'semver';
+import { CLIENT_CHANGELOG_TARGETS, updateClientChangelogs } from './client-changelog.mjs';
 import {
-  MARKETING_WATCH_PATHS,
+  PACKAGE_PREFIX,
   PRODUCT,
   ROOT,
   deriveIncrement,
-  describeSiteVersion,
   formatGitHubReleaseNotes,
+  formatReleaseCommitMessage,
   getCommitMessages,
   getCommitMessagesBetween,
   isAncestorOfHead,
+  isReleaseCommitMessage,
   latestReachableRelease,
   listGitTags,
-  planRelease,
+  nextFreeVersion,
   runGit,
-  shouldConfirmExistingPublication,
+  tagNameFor,
   tagPushArgs,
   versionsFromTags,
 } from './git-release.mjs';
 
 const CI = process.argv.includes('--ci');
+
+/** @typedef {'major' | 'minor' | 'patch'} Increment */
 
 /**
  * @param {string} name
@@ -43,20 +55,139 @@ function setOutput(name, value) {
 /**
  * @param {string} file
  * @param {string[]} args
+ * @param {import('node:child_process').ExecFileSyncOptions} [options]
  */
-function run(file, args) {
+function run(file, args, options = {}) {
   return execFileSync(file, args, {
     cwd: ROOT,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
+    ...options,
   }).trim();
 }
 
-function assertCleanWorktree() {
-  const dirty = runGit(['status', '--porcelain']);
-  if (dirty) {
-    throw new Error('Refusing to tag a dirty worktree.');
+/**
+ * @returns {{ name: string, path: string, version: string }[]}
+ */
+function listWorkspacePackages() {
+  const raw = run('pnpm', ['m', 'ls', '--json', '-r', '--depth', '-1']);
+  /** @type {unknown} */
+  const parsed = JSON.parse(raw || '[]');
+  const list = Array.isArray(parsed) ? parsed : [parsed];
+  return list
+    .filter(
+      (pkg) =>
+        pkg &&
+        typeof pkg === 'object' &&
+        'name' in pkg &&
+        typeof pkg.name === 'string' &&
+        pkg.name.startsWith(PACKAGE_PREFIX) &&
+        'path' in pkg &&
+        typeof pkg.path === 'string',
+    )
+    .map((pkg) => {
+      const pkgJsonPath = join(pkg.path, 'package.json');
+      const pkgJson = JSON.parse(readFileSync(pkgJsonPath, 'utf8'));
+      return {
+        name: pkg.name,
+        path: pkg.path,
+        version: typeof pkgJson.version === 'string' ? pkgJson.version : '0.0.0',
+      };
+    });
+}
+
+/**
+ * @param {string} packageName
+ * @param {string[]} tags
+ * @returns {string | null}
+ */
+function getLastTag(packageName, tags) {
+  const reachable = versionsFromTags(packageName, tags).filter((entry) =>
+    isAncestorOfHead(entry.tag),
+  );
+  return reachable.at(-1)?.tag ?? null;
+}
+
+/**
+ * @param {string} tag
+ */
+function commitForTag(tag) {
+  try {
+    return runGit(['rev-parse', `${tag}^{commit}`]);
+  } catch {
+    return null;
   }
+}
+
+/**
+ * Paths whose commits should count toward a package bump.
+ * @param {{ name: string, path: string }} pkg
+ * @returns {string[]}
+ */
+function watchPathsFor(pkg) {
+  const rel = relative(ROOT, pkg.path).replace(/\\/g, '/');
+  const paths = [rel];
+
+  if (pkg.name === PRODUCT) {
+    paths.push('infra/marketing.bicep', 'infra/global.bicep');
+  }
+
+  return paths;
+}
+
+/**
+ * @param {string} packageName
+ * @param {string} packageVersion
+ * @param {string | null} lastTag
+ * @param {Increment} increment
+ * @param {string[]} tags
+ * @returns {{ base: string, next: string, tag: string }}
+ */
+function resolveNextVersion(packageName, packageVersion, lastTag, increment, tags) {
+  const tagVersion = lastTag ? versionsFromTags(packageName, [lastTag])[0]?.version : null;
+  const candidates = [packageVersion, tagVersion].filter(
+    (version) => typeof version === 'string' && Boolean(semver.valid(version)),
+  );
+  const from = candidates.length > 0 ? candidates.sort(semver.rcompare)[0] : '0.0.0';
+  const next = nextFreeVersion(from, increment, tags, packageName);
+  return { base: from, next, tag: tagNameFor(packageName, next) };
+}
+
+/**
+ * @param {{ name: string, version: string, next: string, increment: Increment }[]} releases
+ */
+function updateChangelog(releases) {
+  const changelogPath = join(ROOT, 'CHANGELOG.md');
+  const date = new Date().toISOString().slice(0, 10);
+  const section = [
+    `## ${date}`,
+    '',
+    ...releases.map((release) => {
+      const target = CLIENT_CHANGELOG_TARGETS[release.name];
+      const name = target ? `[${release.name}](${target.markdown})` : release.name;
+      return `- **${name}** \`${release.version}\` → \`${release.next}\` (${release.increment})`;
+    }),
+    '',
+  ].join('\n');
+
+  if (existsSync(changelogPath)) {
+    const existing = readFileSync(changelogPath, 'utf8');
+    const withoutHeader = existing.replace(/^# Changelog\r?\n\r?\n?/, '');
+    writeFileSync(changelogPath, `# Changelog\n\n${section}${withoutHeader}`);
+  } else {
+    writeFileSync(changelogPath, `# Changelog\n\n${section}`);
+  }
+}
+
+/**
+ * @param {string} packagePath
+ * @param {string} version
+ */
+function writePackageVersion(packagePath, version) {
+  const pkgJsonPath = join(packagePath, 'package.json');
+  const pkg = JSON.parse(readFileSync(pkgJsonPath, 'utf8'));
+  pkg.version = version;
+  writeFileSync(pkgJsonPath, `${JSON.stringify(pkg, null, 2)}\n`);
 }
 
 function syncToOriginMain() {
@@ -68,14 +199,20 @@ function syncToOriginMain() {
   runGit(['reset', '--hard', 'origin/main']);
 }
 
-/**
- * @param {string} tag
- */
-function commitForTag(tag) {
-  try {
-    return runGit(['rev-parse', `${tag}^{commit}`]);
-  } catch {
-    return null;
+function pushReleaseCommit() {
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      run('git', ['push', 'origin', 'HEAD:main']);
+      return;
+    } catch (error) {
+      if (attempt === maxAttempts) throw error;
+      console.log(
+        `Push rejected (attempt ${attempt}/${maxAttempts}); rebasing onto origin/main...`,
+      );
+      runGit(['fetch', 'origin', 'main']);
+      run('git', ['pull', '--rebase', '--autostash', 'origin', 'main']);
+    }
   }
 }
 
@@ -128,38 +265,77 @@ function ensureAnnotatedTag(tag, sha) {
 }
 
 /**
- * @param {{ tag: string, version: string }} last
+ * @param {{ name: string, version: string, tag: string, path: string }} pkg
  * @param {string[]} tags
  */
-function notesForExistingTag(last, tags) {
-  const reachable = versionsFromTags(PRODUCT, tags).filter((entry) => isAncestorOfHead(entry.tag));
-  const index = reachable.findIndex((entry) => entry.version === last.version);
-  const previous = index > 0 ? reachable[index - 1] : null;
-  const messages = getCommitMessagesBetween(
-    previous?.tag ?? null,
-    last.tag,
-    MARKETING_WATCH_PATHS,
-  );
-  return formatGitHubReleaseNotes(last.version, messages, deriveIncrement(messages));
+function notesForPackage(pkg, tags) {
+  const previous = versionsFromTags(pkg.name, tags)
+    .filter((entry) => entry.version !== pkg.version && isAncestorOfHead(entry.tag))
+    .at(-1);
+  const until = commitForTag(pkg.tag) ? pkg.tag : 'HEAD';
+  const messages = getCommitMessagesBetween(previous?.tag ?? null, until, watchPathsFor(pkg));
+  return formatGitHubReleaseNotes(pkg.version, messages, deriveIncrement(messages));
 }
 
 /**
- * @param {{ tag: string, version: string }} last
+ * @param {{ name: string, version: string, tag: string, path: string }[]} packages
  * @param {string[]} tags
- * @returns {boolean} true when CI confirmed the GitHub Release (dispatch Pages)
+ * @param {string} headSha
  */
-function confirmExistingPublication(last, tags) {
-  const notes = notesForExistingTag(last, tags);
+function confirmExistingPublication(packages, tags, headSha) {
   if (!CI) {
-    console.log(`HEAD is already ${last.tag}; would confirm GitHub Release.`);
-    console.log('\nNotes:\n');
-    console.log(notes);
+    console.log('HEAD is already a release; would confirm tags and GitHub Releases:');
+    for (const pkg of packages) {
+      console.log(`  ${pkg.tag}`);
+    }
     return false;
   }
-  ensureGitHubRelease(last.tag, notes);
-  console.log(`Confirmed GitHub Release ${last.tag}.`);
+
+  for (const pkg of packages) {
+    ensureAnnotatedTag(pkg.tag, headSha);
+    ensureGitHubRelease(pkg.tag, notesForPackage(pkg, tags));
+  }
+
+  const primary = packages.find((pkg) => pkg.name === PRODUCT) ?? packages[0];
+  console.log(`Confirmed GitHub Release ${primary.tag}.`);
   setOutput('released', 'true');
-  setOutput('tag', last.tag);
+  setOutput('tag', primary.tag);
+  return true;
+}
+
+/**
+ * @param {string[]} tags
+ * @param {string} headSha
+ * @param {string} headMessage
+ * @returns {boolean}
+ */
+function retryExistingPublicationIfNeeded(tags, headSha, headMessage) {
+  const packages = listWorkspacePackages();
+  /** @type {{ name: string, version: string, tag: string, path: string }[]} */
+  const targets = [];
+  const releaseHead = isReleaseCommitMessage(headMessage);
+
+  for (const pkg of packages) {
+    const last = latestReachableRelease(tags, pkg.name);
+    const lastTagSha = last ? commitForTag(last.tag) : null;
+
+    if (last && lastTagSha === headSha) {
+      targets.push({ name: pkg.name, version: last.version, tag: last.tag, path: pkg.path });
+      continue;
+    }
+
+    if (releaseHead) {
+      targets.push({
+        name: pkg.name,
+        version: pkg.version,
+        tag: tagNameFor(pkg.name, pkg.version),
+        path: pkg.path,
+      });
+    }
+  }
+
+  if (targets.length === 0) return false;
+  confirmExistingPublication(targets, tags, headSha);
   return true;
 }
 
@@ -169,50 +345,98 @@ function main() {
   }
 
   const tags = listGitTags();
-  const last = latestReachableRelease(tags);
   const headSha = runGit(['rev-parse', 'HEAD']);
-  const lastTagSha = last ? commitForTag(last.tag) : null;
+  const headMessage = runGit(['log', '-1', '--format=%B']);
 
-  if (last && shouldConfirmExistingPublication(last, headSha, lastTagSha)) {
-    confirmExistingPublication(last, tags);
+  if (retryExistingPublicationIfNeeded(tags, headSha, headMessage)) {
     return;
   }
 
-  const messages = getCommitMessages(last?.tag ?? null, MARKETING_WATCH_PATHS);
-  const planned = planRelease({
-    lastVersion: last?.version ?? '0.0.0',
-    messages,
-    tags,
-  });
+  const packages = listWorkspacePackages();
+  if (packages.length === 0) {
+    console.log('No workspace packages found.');
+    setOutput('released', 'false');
+    return;
+  }
 
-  if (planned.kind === 'empty') {
+  /** @type {{ name: string, path: string, version: string, next: string, increment: Increment, tag: string, messages: string[] }[]} */
+  const releases = [];
+
+  for (const pkg of packages) {
+    const lastTag = getLastTag(pkg.name, tags);
+    const paths = watchPathsFor(pkg);
+    const messages = getCommitMessages(lastTag, paths);
+    const increment = deriveIncrement(messages);
+    if (!increment) continue;
+
+    const resolved = resolveNextVersion(pkg.name, pkg.version, lastTag, increment, tags);
+    releases.push({
+      name: pkg.name,
+      path: pkg.path,
+      version: resolved.base,
+      next: resolved.next,
+      increment,
+      tag: resolved.tag,
+      messages,
+    });
+  }
+
+  if (releases.length === 0) {
     console.log('Nothing to release.');
     setOutput('released', 'false');
     return;
   }
 
-  const from = last?.tag ?? 'untagged';
-  console.log(
-    CI
-      ? `Releasing ${planned.tag} (${planned.increment}) from ${from}`
-      : `Dry-run — would release ${planned.tag} (${planned.increment}) from ${from}`,
-  );
-  console.log(`  site version now: ${describeSiteVersion()}`);
+  console.log(CI ? 'Releasing:' : 'Dry-run — would release:');
+  for (const release of releases) {
+    console.log(`  ${release.name}: ${release.version} → ${release.next} (${release.increment}) [${release.tag}]`);
+  }
 
   if (!CI) {
-    console.log('\nRe-run with --ci to create the annotated tag and GitHub Release.');
+    console.log('\nRe-run with --ci to bump, commit, tag, push, and publish GitHub Releases.');
     console.log('\nNotes:\n');
-    console.log(planned.notes);
+    for (const release of releases) {
+      console.log(formatGitHubReleaseNotes(release.next, release.messages, release.increment));
+    }
     return;
   }
 
-  assertCleanWorktree();
-  ensureAnnotatedTag(planned.tag, headSha);
-  ensureGitHubRelease(planned.tag, planned.notes);
+  for (const release of releases) {
+    writePackageVersion(release.path, release.next);
+  }
 
-  console.log(`Tagged and published GitHub Release ${planned.tag}.`);
+  updateChangelog(releases);
+  updateClientChangelogs(ROOT, releases, new Date().toISOString().slice(0, 10));
+
+  const message = formatReleaseCommitMessage(releases);
+
+  for (const release of releases) {
+    run('git', ['add', join(release.path, 'package.json')]);
+  }
+  run('git', ['add', 'CHANGELOG.md']);
+  for (const release of releases) {
+    const targets = CLIENT_CHANGELOG_TARGETS[release.name];
+    if (targets) run('git', ['add', targets.markdown, targets.data]);
+  }
+  run('git', ['commit', '-m', message], {
+    env: { ...process.env, HUSKY: '0' },
+  });
+
+  const releaseSha = runGit(['rev-parse', 'HEAD']);
+  pushReleaseCommit();
+
+  for (const release of releases) {
+    ensureAnnotatedTag(release.tag, releaseSha);
+    ensureGitHubRelease(
+      release.tag,
+      formatGitHubReleaseNotes(release.next, release.messages, release.increment),
+    );
+  }
+
+  const primary = releases.find((release) => release.name === PRODUCT) ?? releases[0];
+  console.log('Release commit and tags pushed.');
   setOutput('released', 'true');
-  setOutput('tag', planned.tag);
+  setOutput('tag', primary.tag);
 }
 
 main();

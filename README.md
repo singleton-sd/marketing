@@ -20,23 +20,25 @@ See [SETUP.md](SETUP.md), [docs/deployment.md](docs/deployment.md), and [AGENTS.
 
 ## Releases
 
-Releases are **tag-only**. Merging to `main` never bumps `package.json`, and the
-Release workflow never commits or pushes to `main`.
+Releases are committed to `main` by the **singleton-release** GitHub App, which
+Pato adds to the main branch ruleset bypass list. The workflow never uses a
+PAT and never falls back to `GITHUB_TOKEN` for the push.
 
-On each merge to `main`, `.github/workflows/release.yml`:
+On each merge to `main` (unless the head commit is itself a release —
+`chore(release)` or `[skip ci]`), `.github/workflows/release.yml`:
 
-1. Reads existing git tags (`vX.Y.Z`, plus legacy `@singleton-sd/marketing@x.y.z`)
-2. Looks at conventional commits since the last reachable tag (`feat` / `fix` /
-   `perf` / breaking)
-3. Creates and pushes **only** an annotated `vX.Y.Z` tag
-4. Publishes a GitHub Release with notes from those commits
-5. Dispatches the Pages deploy so production rebuilds with the new tag
-
-Build-time version comes from `git describe` (shown in the site footer), not
-from `package.json`. The marketing `version` field is `0.0.0-development` and
-is not the source of truth.
+1. Mints an installation token from `vars.RELEASE_APP_ID` and
+   `secrets.RELEASE_APP_PRIVATE_KEY`
+2. Bumps `@singleton-sd/*` `package.json` versions from conventional commits
+3. Updates `CHANGELOG.md`, `apps/marketing/CHANGELOG.md`, and
+   `apps/marketing/src/data/changelog.json`
+4. Commits `chore(release): vX.Y.Z [skip ci]`, tags `@scope/name@version`,
+   and pushes the commit then the tags to `main`
+5. Creates the GitHub Release
+6. Dispatches `pages.yml` so production rebuilds from the committed version
+   and changelog (`[skip ci]` skips the push-triggered Pages run)
 
 ```sh
-pnpm release          # dry-run the next tag and notes
-pnpm release:ci       # CI only — tag + GitHub Release, never a branch push
+pnpm release          # dry-run the next bump and notes
+pnpm release:ci       # CI only — bump, commit, tag, push, GitHub Release
 ```

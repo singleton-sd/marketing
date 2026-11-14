@@ -6,6 +6,7 @@ import { clientFacingChanges } from './client-changelog.mjs';
 
 export const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 export const PRODUCT = '@singleton-sd/marketing';
+export const PACKAGE_PREFIX = '@singleton-sd/';
 export const MARKETING_WATCH_PATHS = [
   'apps/marketing',
   'infra/marketing.bicep',
@@ -34,74 +35,55 @@ export function listGitTags() {
 }
 
 /**
- * Parse repo `vX.Y.Z` tags and legacy `@scope/name@version` product tags.
+ * @param {string | null | undefined} message
+ */
+export function isReleaseCommitMessage(message) {
+  const text = typeof message === 'string' ? message : '';
+  const subject = text.split('\n')[0] ?? '';
+  return (
+    /^chore\(release\)/i.test(subject) ||
+    /\[skip ci\]/i.test(text) ||
+    /^chore:\s*Release/i.test(subject)
+  );
+}
+
+/**
+ * @param {{ name: string, next: string, tag: string }[]} releases
+ */
+export function formatReleaseCommitMessage(releases) {
+  const subject =
+    releases.length === 1
+      ? `chore(release): v${releases[0].next} [skip ci]`
+      : 'chore(release): package versions [skip ci]';
+  const body = releases.map((release) => `- ${release.tag}`).join('\n');
+  return `${subject}\n\n${body}\n`;
+}
+
+/**
+ * Parse `@scope/name@version` product tags.
  * @param {string} tag
  * @param {string} [product]
  * @returns {ReleaseTag | null}
  */
 export function parseReleaseTag(tag, product = PRODUCT) {
   if (typeof tag !== 'string' || !tag) return null;
-
-  const vMatch = /^v(\d+\.\d+\.\d+)$/.exec(tag);
-  if (vMatch && semver.valid(vMatch[1])) {
-    return { tag, version: vMatch[1] };
-  }
-
   const prefix = `${product}@`;
-  if (tag.startsWith(prefix)) {
-    const version = tag.slice(prefix.length);
-    if (semver.valid(version)) return { tag, version };
-  }
-
-  return null;
+  if (!tag.startsWith(prefix)) return null;
+  const version = tag.slice(prefix.length);
+  return semver.valid(version) ? { tag, version } : null;
 }
 
 /**
- * Unique versions from tags, newest last. Prefers `vX.Y.Z` when both formats exist.
+ * Unique versions from package tags, newest last.
  * @param {string} product
  * @param {string[]} tags
  * @returns {ReleaseTag[]}
  */
 export function versionsFromTags(product, tags) {
-  /** @type {Map<string, ReleaseTag>} */
-  const byVersion = new Map();
-  for (const tag of tags) {
-    const parsed = parseReleaseTag(tag, product);
-    if (!parsed) continue;
-    const existing = byVersion.get(parsed.version);
-    if (!existing || (parsed.tag.startsWith('v') && !existing.tag.startsWith('v'))) {
-      byVersion.set(parsed.version, parsed);
-    }
-  }
-  return [...byVersion.values()].sort((left, right) => semver.compare(left.version, right.version));
-}
-
-/**
- * Turn `git describe` output into the version string shown at build time.
- * @param {string | null | undefined} described
- */
-export function displayVersionFromDescribe(described) {
-  if (!described || typeof described !== 'string') return '0.0.0-development';
-  let value = described.trim();
-  value = value.replace(/^@singleton-sd\/marketing@/, '');
-  value = value.replace(/^v(?=\d)/, '');
-  return value || '0.0.0-development';
-}
-
-export function describeSiteVersion() {
-  try {
-    const described = runGit([
-      'describe',
-      '--tags',
-      '--match',
-      'v[0-9]*',
-      '--match',
-      '@singleton-sd/marketing@*',
-    ]);
-    return displayVersionFromDescribe(described);
-  } catch {
-    return '0.0.0-development';
-  }
+  return tags
+    .map((tag) => parseReleaseTag(tag, product))
+    .filter((entry) => entry !== null)
+    .sort((left, right) => semver.compare(left.version, right.version));
 }
 
 /**
@@ -118,29 +100,44 @@ export function isAncestorOfHead(ref) {
 
 /**
  * @param {string[]} [tags]
+ * @param {string} [product]
  * @returns {ReleaseTag[]}
  */
-export function reachableReleases(tags = listGitTags()) {
-  return versionsFromTags(PRODUCT, tags).filter((entry) => isAncestorOfHead(entry.tag));
+export function reachableReleases(tags = listGitTags(), product = PRODUCT) {
+  return versionsFromTags(product, tags).filter((entry) => isAncestorOfHead(entry.tag));
 }
 
 /**
  * @param {string[]} [tags]
+ * @param {string} [product]
  * @returns {ReleaseTag | null}
  */
-export function latestReachableRelease(tags = listGitTags()) {
-  return reachableReleases(tags).at(-1) ?? null;
+export function latestReachableRelease(tags = listGitTags(), product = PRODUCT) {
+  return reachableReleases(tags, product).at(-1) ?? null;
 }
 
 /**
  * True when the latest reachable tag already points at HEAD — a retry after the
- * tag push succeeded but the GitHub Release (or Pages dispatch) did not.
+ * commit/tag push succeeded but the GitHub Release (or Pages dispatch) did not.
  * @param {ReleaseTag | null} last
  * @param {string | null | undefined} headSha
  * @param {string | null | undefined} lastTagSha
  */
 export function shouldConfirmExistingPublication(last, headSha, lastTagSha) {
   return Boolean(last && headSha && lastTagSha && headSha === lastTagSha);
+}
+
+/**
+ * @param {string | null | undefined} headMessage
+ * @param {ReleaseTag | null} last
+ * @param {string | null | undefined} headSha
+ * @param {string | null | undefined} lastTagSha
+ */
+export function shouldRetryPublication(headMessage, last, headSha, lastTagSha) {
+  return (
+    isReleaseCommitMessage(headMessage) ||
+    shouldConfirmExistingPublication(last, headSha, lastTagSha)
+  );
 }
 
 /**
@@ -186,7 +183,7 @@ export function deriveIncrement(messages) {
 
   for (const message of messages) {
     const subject = message.split('\n')[0] ?? '';
-    if (/^chore:\s*Release/i.test(subject)) continue;
+    if (isReleaseCommitMessage(message)) continue;
 
     const match = subject.match(/^([a-z]+)(?:\([^)]*\))?(!)?:\s*(.+)$/i);
     const breakingFooter = /^breaking change:/im.test(message);
@@ -213,9 +210,10 @@ export function deriveIncrement(messages) {
  * @param {string} baseVersion
  * @param {Increment} increment
  * @param {string[]} existingTags
+ * @param {string} [product]
  */
-export function nextFreeVersion(baseVersion, increment, existingTags) {
-  const existing = new Set(versionsFromTags(PRODUCT, existingTags).map((entry) => entry.version));
+export function nextFreeVersion(baseVersion, increment, existingTags, product = PRODUCT) {
+  const existing = new Set(versionsFromTags(product, existingTags).map((entry) => entry.version));
   let base = semver.valid(baseVersion) ? baseVersion : '0.0.0';
 
   for (let i = 0; i < 50; i += 1) {
@@ -232,23 +230,30 @@ export function nextFreeVersion(baseVersion, increment, existingTags) {
 }
 
 /**
+ * @param {string} packageName
  * @param {string} version
  */
-export function tagNameFor(version) {
+export function tagNameFor(packageName, version) {
+  if (!packageName.startsWith(PACKAGE_PREFIX)) {
+    throw new Error(`Unexpected package name: ${packageName}`);
+  }
   if (!semver.valid(version) || semver.prerelease(version)) {
     throw new Error(`Invalid stable version: ${version}`);
   }
-  return `v${version}`;
+  return `${packageName}@${version}`;
 }
 
 /**
- * Only vX.Y.Z tag refs — never a branch (including main).
+ * Only annotated product tags — never a branch (including main).
  * @param {string} tag
  * @returns {string[]}
  */
 export function tagPushArgs(tag) {
-  if (!/^v\d+\.\d+\.\d+$/.test(tag)) {
-    throw new Error(`Refusing to push non vX.Y.Z tag ref: ${tag}`);
+  if (tag === 'main' || tag.includes(':') || tag.startsWith('refs/heads/')) {
+    throw new Error(`Refusing to push a branch ref: ${tag}`);
+  }
+  if (!/^@singleton-sd\/[A-Za-z0-9._-]+@\d+\.\d+\.\d+$/.test(tag)) {
+    throw new Error(`Refusing to push non package-version tag ref: ${tag}`);
   }
   return ['push', 'origin', `refs/tags/${tag}`];
 }
@@ -303,17 +308,17 @@ export function formatGitHubReleaseNotes(version, messages, increment = null) {
 }
 
 /**
- * @param {{ lastVersion: string, messages: string[], tags: string[] }} input
+ * @param {{ lastVersion: string, messages: string[], tags: string[], packageName?: string }} input
  * @returns {{ kind: 'empty' } | { kind: 'release', version: string, tag: string, increment: Increment, notes: string }}
  */
-export function planRelease({ lastVersion, messages, tags }) {
+export function planRelease({ lastVersion, messages, tags, packageName = PRODUCT }) {
   const increment = deriveIncrement(messages);
   if (!increment) {
     return { kind: 'empty' };
   }
 
-  const version = nextFreeVersion(lastVersion, increment, tags);
-  const tag = tagNameFor(version);
+  const version = nextFreeVersion(lastVersion, increment, tags, packageName);
+  const tag = tagNameFor(packageName, version);
   return {
     kind: 'release',
     version,

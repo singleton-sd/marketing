@@ -63,15 +63,20 @@ Canonical origin in Astro/`config.yml`: `https://www.singletonsd.com`.
 
 ## Releases
 
-Releases are tag-only. Conventional commits on marketing watch paths determine
-the next `vX.Y.Z`. `.github/workflows/release.yml` creates that annotated tag
-and a GitHub Release, then dispatches `pages.yml`. It never commits and never
-pushes to `main` (the CodeRabbit ruleset blocks direct branch pushes to `main`;
-tag pushes are not covered by that branch ruleset).
+Path-aware bumps: each `@singleton-sd/*` package versions independently from
+conventional commits on its watch paths. The **singleton-release** GitHub App
+(on the main ruleset bypass list) commits the bump to `main`. Configure
+`vars.RELEASE_APP_ID` and `secrets.RELEASE_APP_PRIVATE_KEY`; the workflow
+fails if either is missing and never falls back to `GITHUB_TOKEN` for the
+push.
 
-Build-time version is `git describe`, not `package.json`
-(`0.0.0-development` is a placeholder). Public **What’s new**: `/changelog`
-(see `docs/client-changelog.md`).
+On `main`, `.github/workflows/release.yml` runs `pnpm release:ci`, writes the
+root bump index + marketing product changelog / JSON, commits
+`chore(release): vX.Y.Z [skip ci]`, tags `@scope/name@version`, creates the
+GitHub Release, then dispatches `pages.yml` (the `[skip ci]` commit does not
+trigger Pages on push).
+
+Public **What’s new** page: `/changelog` (see `docs/client-changelog.md`).
 
 Dry-run (local):
 
@@ -81,7 +86,7 @@ pnpm changelog:test
 pnpm changelog:check
 ```
 
-CI / real release (bots only — tag + GitHub Release, never a branch push):
+CI / real release (singleton-release app only — pushes to `main`):
 
 ```sh
 pnpm release:ci
