@@ -59,7 +59,6 @@ pnpm changelog:check  # MD ↔ JSON projection drift check
 | commitlint | Conventional commits + `MKT-<n>` ticket rule (`.commitlintrc.cjs`) |
 | `scripts/release-changed.mjs` | Tag-only `vX.Y.Z` + GitHub Release from conventional commits |
 | `scripts/client-changelog.mjs` | Client-facing `/changelog` Markdown + JSON projections |
-| release-it | Available for manual/single-package use (`.release-it.json`; git/GitHub off) |
 | Root `CHANGELOG.md` | Date sections with package bump index |
 | `apps/marketing/CHANGELOG.md` | Canonical product release notes → `/changelog` |
 

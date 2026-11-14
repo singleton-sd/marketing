@@ -25,10 +25,7 @@
   "devDependencies": {
     "@commitlint/cli": "^19.6.1",
     "@commitlint/config-conventional": "^19.6.0",
-    "@release-it/conventional-changelog": "10.0.1",
-    "conventional-changelog-conventionalcommits": "^8.0.0",
     "husky": "^9.1.7",
-    "release-it": "^18.1.2",
     "semver": "^7.7.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2"

@@ -87,6 +87,17 @@ test('shouldConfirmExistingPublication is a retry when the latest tag is HEAD', 
   assert.equal(shouldConfirmExistingPublication(last, sha, null), false);
 });
 
+test('planRelease is empty when commits are not releasable', () => {
+  assert.equal(
+    planRelease({
+      lastVersion: '0.7.1',
+      messages: ['docs: Update README', 'chore: tidy', 'test: Cover footer'],
+      tags: ['v0.7.1'],
+    }).kind,
+    'empty',
+  );
+});
+
 test('planRelease is tag-only and never names a branch', () => {
   const planned = planRelease({
     lastVersion: '0.7.1',

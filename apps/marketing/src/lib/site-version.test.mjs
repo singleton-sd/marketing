@@ -17,12 +17,13 @@ test('package.json version is a placeholder, not the released version', () => {
   assert.equal(pkg.version, '0.0.0-development');
 });
 
-test('siteVersion comes from git describe, not package.json', (t) => {
+test('siteVersion comes from git describe, not package.json', () => {
+  const version = siteVersion();
   if (!latestReachableRelease()) {
-    t.skip('no matching release tag is reachable');
+    assert.equal(version, '0.0.0-development');
+    assert.equal(version, pkg.version);
     return;
   }
-  const version = siteVersion();
   assert.notEqual(version, pkg.version);
   assert.match(version, /^\d+\.\d+\.\d+/);
 });
