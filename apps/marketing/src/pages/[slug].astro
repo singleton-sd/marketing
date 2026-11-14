@@ -6,7 +6,7 @@ import { withBase } from '../lib/with-base.mjs';
 
 export async function getStaticPaths() {
   const pages = await getCollection('pages');
-  const dedicated = new Set(['home', 'about', 'services', 'contact']);
+  const dedicated = new Set(['home', 'about', 'services', 'contact', 'waitlist']);
   return pages
     .filter((entry) => !dedicated.has(entry.slug))
     .map((entry) => ({

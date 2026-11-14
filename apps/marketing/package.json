@@ -9,7 +9,8 @@
     "build": "node ./scripts/copy-token-css.mjs && astro build",
     "preview": "astro preview",
     "lint": "astro check",
-    "test": "node --test src/lib/site.test.mjs src/lib/with-base.test.mjs scripts/smoke-tokens.test.mjs ../../scripts/check-pages-asset-paths.test.mjs && astro check",
+    "test": "node --test src/lib/site.test.mjs src/lib/with-base.test.mjs src/lib/lead-form.test.mjs scripts/smoke-tokens.test.mjs ../../scripts/check-pages-asset-paths.test.mjs && astro check",
+    "test:e2e": "playwright test",
     "test:smoke": "node ./scripts/smoke-tokens.mjs",
     "test:pages-paths": "node ../../scripts/check-pages-asset-paths.mjs dist /"
   },
@@ -23,6 +24,7 @@
     "typescript": "^5.7.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49"
   }

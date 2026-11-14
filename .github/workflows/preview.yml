@@ -1,6 +1,6 @@
 # PR preview on GitHub Pages at /pr-preview/pr-<number>/.
 # House pattern: singleton-sd/poc-inkads-marketing `.github/workflows/preview.yml`
-# (without that site's visual-review / PostKit OIDC jobs — this repo has neither).
+# (without that site's visual-review job — this repo has no screenshot baselines).
 #
 # Build runs PR-controlled install/test/build with contents:read and no
 # persisted credentials. Publish/cleanup use a write token but do not execute
@@ -47,10 +47,23 @@ jobs:
       - name: Run tests
         run: pnpm --filter @singleton-sd/marketing run test
 
+      - name: Install Playwright Chromium
+        run: pnpm --filter @singleton-sd/marketing exec playwright install --with-deps chromium
+
+      - name: Playwright lead forms
+        run: |
+          PUBLIC_TURNSTILE_SITE_KEY="${PUBLIC_TURNSTILE_SITE_KEY:-1x00000000000000000000AA}" \
+            pnpm --filter @singleton-sd/marketing run build
+          pnpm --filter @singleton-sd/marketing run test:e2e
+        env:
+          PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}
+
       - name: Build preview site
         run: pnpm --filter @singleton-sd/marketing... run build
         env:
           PREVIEW_BASE_PATH: /pr-preview/pr-${{ github.event.number }}/
+          PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}
+          PUBLIC_LEADS_API_URL: ${{ vars.PUBLIC_LEADS_API_URL }}
 
       - name: Smoke marketing tokens
         run: pnpm --filter @singleton-sd/marketing run test:smoke

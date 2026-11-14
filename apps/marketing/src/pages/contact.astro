@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/marketing/Hero.astro';
+import LeadForm from '../components/marketing/LeadForm.astro';
 import { getEntry } from 'astro:content';
 import { appCta } from '../lib/nav';
 
@@ -10,20 +11,17 @@ if (!page) {
 }
 const { Content } = await page.render();
 const { title, description, ogImage, brand, headline, ctaLabel, ctaUrl } = page.data;
-const primaryHref = ctaUrl ?? appCta.href;
+const discoveryCta = {
+  label: ctaLabel ?? appCta.label,
+  href: ctaUrl ?? appCta.href,
+};
 ---
 
 <BaseLayout title={title} description={description} ogImage={ogImage}>
-  <Hero
-    eyebrow={brand ?? 'Contact'}
-    headline={headline ?? 'Get in touch'}
-    primaryCta={{
-      label: ctaLabel ?? appCta.label,
-      href: primaryHref,
-    }}
-  >
+  <Hero eyebrow={brand ?? 'Contact'} headline={headline ?? 'Get in touch'}>
     <div class="[&_a]:text-accent [&_p]:m-0 [&_p+p]:mt-3">
       <Content />
     </div>
   </Hero>
+  <LeadForm formType="contact" discoveryCta={discoveryCta} />
 </BaseLayout>

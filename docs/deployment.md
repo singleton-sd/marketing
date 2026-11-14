@@ -31,8 +31,8 @@ This follows the house pattern in
 [`poc-inkads-marketing`](https://github.com/singleton-sd/poc-inkads-marketing)
 (`pages.yml` + `rossjrw/pr-preview-action`, custom-domain `CNAME`, preview
 umbrella `pr-preview`). Visual-review / PostKit OIDC jobs from that repo are
-not copied here: this site has no visual suite, and the contact form on
-[`#9`](https://github.com/singleton-sd/marketing/pull/9) is a separate branch.
+not copied here: this site has no visual-comparison suite. Contact and waitlist
+forms POST from the browser to `https://api.singletonsd.com/v1/leads`.
 
 ## One-time GitHub Pages configuration
 
@@ -126,13 +126,28 @@ redirects the apex to www once both record sets exist.
 `apps/marketing/public/.nojekyll` is required so GitHub’s Jekyll step does not
 ignore Astro’s `_astro/` asset folder.
 
-## Contact form
+## Contact and waitlist forms
 
-Keep posting to PostKit. This repo does not wire CRM / lead intake. Open PR
-[#9](https://github.com/singleton-sd/marketing/pull/9) adds the form on another
-branch; after it merges, follow the InkAds pattern to bake
-`PUBLIC_POSTKIT_API_BASE_URL` in `pages.yml` / `preview.yml` if that PR does
-not already do so.
+The static site POSTs JSON from the browser to
+`https://api.singletonsd.com/v1/leads` (ADR-001). There is no server in this
+repo and no PostKit / CRM call on the form path.
+
+GitHub Pages is the host:
+
+- Custom domain / CNAME: `www.singletonsd.com` (`apps/marketing/public/CNAME`)
+- Pages source: `gh-pages` `/`
+- HTTPS enforced; certificate names `www.singletonsd.com` and `singletonsd.com`
+- Astro `site`: `https://www.singletonsd.com`
+
+The gateway allowlist for this site is `https://www.singletonsd.com` and
+`https://singletonsd.com`. `sourceSite` is set from `location.origin` so it
+matches Origin. PR previews live under `/pr-preview/pr-<n>/` on the same www
+origin.
+
+Bake the public Turnstile site key at build time with
+`PUBLIC_TURNSTILE_SITE_KEY` (GitHub Actions variable, not a secret). Optional
+`PUBLIC_LEADS_API_URL` overrides the default gateway URL. Never put the
+Turnstile secret in this repo.
 
 ## Local checks
 
