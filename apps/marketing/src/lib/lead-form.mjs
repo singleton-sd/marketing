@@ -429,17 +429,47 @@ export function parseRetryAfterSeconds(headers) {
 }
 
 /**
+ * @param {number} seconds
+ * @returns {string}
+ */
+function retryDelayPhrase(seconds) {
+  if (seconds < 60) {
+    return `${seconds} second${seconds === 1 ? '' : 's'}`;
+  }
+  const minutes = Math.ceil(seconds / 60);
+  return `${minutes} minute${minutes === 1 ? '' : 's'}`;
+}
+
+/**
+ * @param {unknown} headers
+ * @param {string} prefix
+ * @param {string} fallback
+ * @returns {string}
+ */
+function retryAfterCopy(headers, prefix, fallback) {
+  const seconds = parseRetryAfterSeconds(headers);
+  if (!seconds) return fallback;
+  return `${prefix}. Please try again in ${retryDelayPhrase(seconds)}.`;
+}
+
+/**
  * @param {unknown} headers
  * @returns {string}
  */
 export function retryAfterMessage(headers) {
-  const seconds = parseRetryAfterSeconds(headers);
-  if (!seconds) return GENERIC_RETRY;
-  if (seconds < 60) {
-    return `Too many requests. Please try again in ${seconds} second${seconds === 1 ? '' : 's'}.`;
-  }
-  const minutes = Math.ceil(seconds / 60);
-  return `Too many requests. Please try again in ${minutes} minute${minutes === 1 ? '' : 's'}.`;
+  return retryAfterCopy(headers, 'Too many requests', GENERIC_RETRY);
+}
+
+/**
+ * @param {unknown} headers
+ * @returns {string}
+ */
+export function unavailableRetryMessage(headers) {
+  return retryAfterCopy(
+    headers,
+    'Temporarily unavailable',
+    'Temporarily unavailable. Please try again shortly.',
+  );
 }
 
 /**
@@ -487,8 +517,12 @@ export function interpretLeadResponse(status, body, headers) {
     };
   }
 
-  if (status === 429 || status === 503) {
+  if (status === 429) {
     return { kind: 'retry', message: retryAfterMessage(headers), fieldErrors: {} };
+  }
+
+  if (status === 503) {
+    return { kind: 'retry', message: unavailableRetryMessage(headers), fieldErrors: {} };
   }
 
   if (status === 403 || status >= 500) {
