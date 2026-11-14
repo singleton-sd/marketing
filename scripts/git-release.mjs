@@ -140,6 +140,75 @@ export function shouldRetryPublication(headMessage, last, headSha, lastTagSha) {
   );
 }
 
+/** @typedef {{ name: string, version: string, path: string }} RetryPackage */
+/** @typedef {{ name: string, version: string, tag: string, path: string }} RetryTarget */
+
+/**
+ * Packages to confirm (tag + GitHub Release) when HEAD is already a release.
+ * Independent packages whose version still matches their last tag are skipped.
+ *
+ * @param {{
+ *   packages: RetryPackage[],
+ *   lastFor: (name: string) => ReleaseTag | null,
+ *   lastTagShaFor: (tag: string) => string | null,
+ *   headSha: string,
+ *   headMessage: string,
+ * }} input
+ * @returns {RetryTarget[]}
+ */
+export function selectRetryTargets({ packages, lastFor, lastTagShaFor, headSha, headMessage }) {
+  const releaseHead = isReleaseCommitMessage(headMessage);
+  /** @type {RetryTarget[]} */
+  const targets = [];
+
+  for (const pkg of packages) {
+    const last = lastFor(pkg.name);
+    const lastTagSha = last ? lastTagShaFor(last.tag) : null;
+
+    if (last && lastTagSha === headSha) {
+      targets.push({ name: pkg.name, version: last.version, tag: last.tag, path: pkg.path });
+      continue;
+    }
+
+    if (releaseHead && (!last || last.version !== pkg.version)) {
+      targets.push({
+        name: pkg.name,
+        version: pkg.version,
+        tag: tagNameFor(pkg.name, pkg.version),
+        path: pkg.path,
+      });
+    }
+  }
+
+  return targets;
+}
+
+/**
+ * Push HEAD to origin/main, rebasing on rejection. Returns the SHA that
+ * landed on main after any rebase.
+ *
+ * @param {(args: string[]) => string} [git]
+ */
+export function pushCommitToMain(git = (args) => runGit(args)) {
+  const maxAttempts = 3;
+  /** @type {unknown} */
+  let lastError;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      git(['push', 'origin', 'HEAD:main']);
+      return git(['rev-parse', 'HEAD']);
+    } catch (error) {
+      lastError = error;
+      if (attempt === maxAttempts) break;
+      git(['fetch', 'origin', 'main']);
+      git(['pull', '--rebase', '--autostash', 'origin', 'main']);
+    }
+  }
+
+  throw lastError;
+}
+
 /**
  * @param {string | null} sinceTag
  * @param {string} untilRef

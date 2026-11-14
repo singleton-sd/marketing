@@ -28,11 +28,12 @@ import {
   getCommitMessages,
   getCommitMessagesBetween,
   isAncestorOfHead,
-  isReleaseCommitMessage,
   latestReachableRelease,
   listGitTags,
   nextFreeVersion,
+  pushCommitToMain,
   runGit,
+  selectRetryTargets,
   tagNameFor,
   tagPushArgs,
   versionsFromTags,
@@ -199,23 +200,6 @@ function syncToOriginMain() {
   runGit(['reset', '--hard', 'origin/main']);
 }
 
-function pushReleaseCommit() {
-  const maxAttempts = 3;
-  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    try {
-      run('git', ['push', 'origin', 'HEAD:main']);
-      return;
-    } catch (error) {
-      if (attempt === maxAttempts) throw error;
-      console.log(
-        `Push rejected (attempt ${attempt}/${maxAttempts}); rebasing onto origin/main...`,
-      );
-      runGit(['fetch', 'origin', 'main']);
-      run('git', ['pull', '--rebase', '--autostash', 'origin', 'main']);
-    }
-  }
-}
-
 /**
  * @param {string} tag
  */
@@ -310,30 +294,13 @@ function confirmExistingPublication(packages, tags, headSha) {
  * @returns {boolean}
  */
 function retryExistingPublicationIfNeeded(tags, headSha, headMessage) {
-  const packages = listWorkspacePackages();
-  /** @type {{ name: string, version: string, tag: string, path: string }[]} */
-  const targets = [];
-  const releaseHead = isReleaseCommitMessage(headMessage);
-
-  for (const pkg of packages) {
-    const last = latestReachableRelease(tags, pkg.name);
-    const lastTagSha = last ? commitForTag(last.tag) : null;
-
-    if (last && lastTagSha === headSha) {
-      targets.push({ name: pkg.name, version: last.version, tag: last.tag, path: pkg.path });
-      continue;
-    }
-
-    if (releaseHead) {
-      targets.push({
-        name: pkg.name,
-        version: pkg.version,
-        tag: tagNameFor(pkg.name, pkg.version),
-        path: pkg.path,
-      });
-    }
-  }
-
+  const targets = selectRetryTargets({
+    packages: listWorkspacePackages(),
+    lastFor: (name) => latestReachableRelease(tags, name),
+    lastTagShaFor: (tag) => commitForTag(tag),
+    headSha,
+    headMessage,
+  });
   if (targets.length === 0) return false;
   confirmExistingPublication(targets, tags, headSha);
   return true;
@@ -422,8 +389,7 @@ function main() {
     env: { ...process.env, HUSKY: '0' },
   });
 
-  const releaseSha = runGit(['rev-parse', 'HEAD']);
-  pushReleaseCommit();
+  const releaseSha = pushCommitToMain();
 
   for (const release of releases) {
     ensureAnnotatedTag(release.tag, releaseSha);

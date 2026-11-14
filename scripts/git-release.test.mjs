@@ -10,6 +10,8 @@ import {
   isReleaseCommitMessage,
   parseReleaseTag,
   planRelease,
+  pushCommitToMain,
+  selectRetryTargets,
   shouldConfirmExistingPublication,
   shouldRetryPublication,
   tagNameFor,
@@ -110,6 +112,88 @@ test('shouldRetryPublication also retries a release commit without a GitHub Rele
   assert.equal(shouldRetryPublication('feat: MKT-12 Add intake', last, 'abc', 'abc'), true);
 });
 
+test('selectRetryTargets recovers a tagged HEAD after GitHub Release creation fails', () => {
+  const headSha = 'release-sha';
+  const targets = selectRetryTargets({
+    packages: [
+      { name: '@singleton-sd/marketing', version: '0.8.0', path: 'apps/marketing' },
+    ],
+    lastFor: () => ({ tag: '@singleton-sd/marketing@0.8.0', version: '0.8.0' }),
+    lastTagShaFor: () => headSha,
+    headSha,
+    headMessage: 'chore(release): v0.8.0 [skip ci]',
+  });
+  assert.deepEqual(targets, [
+    {
+      name: '@singleton-sd/marketing',
+      version: '0.8.0',
+      tag: '@singleton-sd/marketing@0.8.0',
+      path: 'apps/marketing',
+    },
+  ]);
+});
+
+test('selectRetryTargets skips independent packages that were not bumped', () => {
+  /** @type {Record<string, { tag: string, version: string }>} */
+  const last = {
+    '@singleton-sd/marketing': { tag: '@singleton-sd/marketing@0.7.1', version: '0.7.1' },
+    '@singleton-sd/other': { tag: '@singleton-sd/other@1.0.0', version: '1.0.0' },
+  };
+  /** @type {Record<string, string>} */
+  const tagSha = {
+    '@singleton-sd/marketing@0.7.1': 'previous-main',
+    '@singleton-sd/other@1.0.0': 'previous-main',
+  };
+  const targets = selectRetryTargets({
+    packages: [
+      { name: '@singleton-sd/marketing', version: '0.8.0', path: 'apps/marketing' },
+      { name: '@singleton-sd/other', version: '1.0.0', path: 'apps/other' },
+    ],
+    lastFor: (name) => last[name] ?? null,
+    lastTagShaFor: (tag) => tagSha[tag] ?? null,
+    headSha: 'release-sha',
+    headMessage: 'chore(release): v0.8.0 [skip ci]',
+  });
+  assert.deepEqual(
+    targets.map((target) => target.tag),
+    ['@singleton-sd/marketing@0.8.0'],
+  );
+});
+
+test('pushCommitToMain returns the rebased HEAD after a rejected push', () => {
+  const original = 'aaa111';
+  const rebased = 'bbb222';
+  let head = original;
+  let pushes = 0;
+  /** @type {string[]} */
+  const calls = [];
+  const git = (args) => {
+    const key = args.join(' ');
+    calls.push(key);
+    if (key === 'push origin HEAD:main') {
+      pushes += 1;
+      if (pushes === 1) throw new Error('non-fast-forward');
+      return '';
+    }
+    if (key === 'fetch origin main') return '';
+    if (key === 'pull --rebase --autostash origin main') {
+      head = rebased;
+      return '';
+    }
+    if (key === 'rev-parse HEAD') return head;
+    throw new Error(`unexpected git ${key}`);
+  };
+
+  assert.equal(pushCommitToMain(git), rebased);
+  assert.deepEqual(calls, [
+    'push origin HEAD:main',
+    'fetch origin main',
+    'pull --rebase --autostash origin main',
+    'push origin HEAD:main',
+    'rev-parse HEAD',
+  ]);
+});
+
 test('planRelease is empty when commits are not releasable', () => {
   assert.equal(
     planRelease({
@@ -172,10 +256,8 @@ test('formatGitHubReleaseNotes groups client-facing changes', () => {
 });
 
 test('tag push helpers never push a branch', () => {
-  const files = ['git-release.mjs'];
-  for (const relative of files) {
-    const source = readFileSync(join(here, relative), 'utf8');
-    assert.doesNotMatch(source, /HEAD:main/);
-    assert.doesNotMatch(source, /git push origin main/);
-  }
+  const source = readFileSync(join(here, 'git-release.mjs'), 'utf8');
+  const tagPushFn = source.slice(source.indexOf('export function tagPushArgs'));
+  assert.doesNotMatch(tagPushFn, /HEAD:main/);
+  assert.doesNotMatch(tagPushFn, /git push origin main/);
 });

@@ -47,6 +47,8 @@ jobs:
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
           owner: singleton-sd
           repositories: marketing
+          permission-contents: write
+          permission-actions: write
 
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
