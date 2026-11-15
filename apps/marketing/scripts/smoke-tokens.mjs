@@ -116,11 +116,16 @@ export function htmlHasTokenCdnLink(html) {
 
 /**
  * First paint must already be dark — no client theme bootstrap.
+ * Reads data-theme on the document <html> opening tag only, so comments and
+ * attributes like x-data-theme cannot pass.
  * @param {string} html
  * @returns {boolean}
  */
 export function htmlHasDarkTheme(html) {
-  return /<html\b[^>]*\bdata-theme=(["'])dark\1/i.test(html);
+  const openTag = html.match(/<html\b[^>]*>/i)?.[0];
+  if (!openTag) return false;
+  const quoted = openTag.match(/(?:^|[\s/])data-theme\s*=\s*(["'])([\s\S]*?)\1/i);
+  return quoted?.[2].trim().toLowerCase() === 'dark';
 }
 
 /**
@@ -193,6 +198,7 @@ export function smokeMarketingTokens(distDir) {
         `${distRelative(filePath, dist)} links token sheets from ${TOKEN_CDN}.`,
       );
     }
+    // Shipped pages are dark-only; there is no theme toggle or light opt-out.
     if (!htmlHasDarkTheme(html)) {
       errors.push(
         `${distRelative(filePath, dist)} is missing server-rendered data-theme="dark".`,

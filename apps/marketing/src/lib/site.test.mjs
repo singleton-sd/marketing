@@ -79,9 +79,9 @@ test('marketing pages default to server-rendered dark theme', () => {
   const header = readFileSync(join(srcDir, 'components/shell/SiteHeader.astro'), 'utf8');
   const footer = readFileSync(join(srcDir, 'components/shell/SiteFooter.astro'), 'utf8');
   const home = readFileSync(join(srcDir, 'pages/index.astro'), 'utf8');
-  assert.match(layout, /theme = 'dark'/);
-  assert.match(layout, /data-theme=\{theme\}/);
-  assert.doesNotMatch(layout, /theme = 'light'/);
+  assert.match(layout, /data-theme="dark"/);
+  assert.doesNotMatch(layout, /theme\?:/);
+  assert.doesNotMatch(layout, /theme = /);
   assert.doesNotMatch(layout, /localStorage/);
   assert.match(header, /LOGO_DARK/);
   assert.doesNotMatch(header, /LOGO_LIGHT/);

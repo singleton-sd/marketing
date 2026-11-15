@@ -93,6 +93,11 @@ test('htmlHasDarkTheme requires data-theme on html', () => {
   assert.equal(htmlHasDarkTheme('<html lang="en">'), false);
   assert.equal(htmlHasDarkTheme('<html data-theme="light">'), false);
   assert.equal(htmlHasDarkTheme('<div data-theme="dark"></div>'), false);
+  assert.equal(
+    htmlHasDarkTheme('<html><!-- <html data-theme="dark"> --></html>'),
+    false,
+  );
+  assert.equal(htmlHasDarkTheme('<html x-data-theme="dark">'), false);
 });
 
 test('smokeMarketingTokens accepts a valid dist tree', () => {

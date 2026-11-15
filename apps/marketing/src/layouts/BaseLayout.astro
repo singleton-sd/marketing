@@ -14,7 +14,6 @@ interface Props {
   title: string;
   description?: string;
   ogImage?: string;
-  theme?: 'light' | 'dark';
   showShell?: boolean;
 }
 
@@ -22,7 +21,6 @@ const {
   title,
   description = '',
   ogImage,
-  theme = 'dark',
   showShell = true,
 } = Astro.props;
 
@@ -52,7 +50,7 @@ const jsonLd = {
 ---
 
 <!doctype html>
-<html lang="en" data-theme={theme}>
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
