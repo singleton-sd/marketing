@@ -9,7 +9,7 @@
     "build": "node ./scripts/copy-token-css.mjs && astro build",
     "preview": "astro preview",
     "lint": "astro check",
-    "test": "node --test src/lib/site.test.mjs src/lib/with-base.test.mjs src/lib/lead-form.test.mjs scripts/smoke-tokens.test.mjs scripts/check-ssd-vars.test.mjs ../../scripts/check-pages-asset-paths.test.mjs && node ./scripts/check-ssd-vars.mjs && astro check",
+    "test": "node --test src/lib/site.test.mjs src/lib/json-ld.test.mjs src/lib/with-base.test.mjs src/lib/lead-form.test.mjs scripts/smoke-tokens.test.mjs scripts/check-ssd-vars.test.mjs ../../scripts/check-pages-asset-paths.test.mjs ../../scripts/check-preview-workflow.test.mjs && node ./scripts/check-ssd-vars.mjs && astro check",
     "test:ssd-vars": "node ./scripts/check-ssd-vars.mjs",
     "test:e2e": "playwright test",
     "test:smoke": "node ./scripts/smoke-tokens.mjs",

@@ -74,6 +74,24 @@ test('parseArgs rejects unknown flags and --tokens with no value', () => {
   });
 });
 
+test('CLI argument errors exit 1 without a stack', () => {
+  const script = join(dirname(fileURLToPath(import.meta.url)), 'check-ssd-vars.mjs');
+  const run = (args) =>
+    spawnSync(process.execPath, [script, ...args], { encoding: 'utf8' });
+
+  const unknown = run(['--unknown']);
+  assert.equal(unknown.status, 1);
+  assert.equal(unknown.stderr, 'Unknown flag: --unknown\n');
+
+  const positional = run(['oops']);
+  assert.equal(positional.status, 1);
+  assert.equal(positional.stderr, 'Unexpected argument: oops\n');
+
+  const missingApp = run(['--app']);
+  assert.equal(missingApp.status, 1);
+  assert.equal(missingApp.stderr, '--app requires a value\n');
+});
+
 test('CLI exits nonzero when a discovered source uses an undefined token', () => {
   const root = mkdtempSync(join(tmpdir(), 'mkt-ssd-cli-'));
   try {
