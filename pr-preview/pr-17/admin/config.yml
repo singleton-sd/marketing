@@ -1,0 +1,73 @@
+# Decap CMS — git-backed editor for company marketing Markdown.
+# Auth: API gateway https://api.singletonsd.com (v1/cms-auth). Do not add origins here.
+backend:
+  name: github
+  repo: singleton-sd/marketing
+  branch: main
+  base_url: https://api.singletonsd.com
+  auth_endpoint: v1/cms-auth/auth
+
+publish_mode: simple
+
+logo:
+  # Absolute CDN URL — browsers block external <image> refs inside SVG used as <img>.
+  src: https://assets.singletonsd.com/logo/static/dark/circle/bg-none/512.png
+  show_in_header: true
+
+site_url: https://www.singletonsd.com
+display_url: https://www.singletonsd.com
+
+media_folder: apps/marketing/public/uploads
+public_folder: /uploads
+
+collections:
+  - name: pages
+    label: Pages
+    folder: apps/marketing/src/content/pages
+    create: true
+    delete: false
+    slug: '{{slug}}'
+    extension: md
+    format: frontmatter
+    fields:
+      - label: Title
+        name: title
+        widget: string
+        hint: Page title (browser tab / SEO).
+      - label: Description
+        name: description
+        widget: text
+        required: false
+        hint: Short meta description for SEO (~150–160 characters).
+      - label: OG image URL
+        name: ogImage
+        widget: string
+        required: false
+        hint: Absolute URL on assets.singletonsd.com (or leave blank for the default light OG image).
+      - label: Brand
+        name: brand
+        widget: string
+        required: false
+        hint: Hero eyebrow / brand line (e.g. Singleton Software Development).
+      - label: Headline
+        name: headline
+        widget: string
+        required: false
+        hint: Primary H1 under the brand line.
+      - label: CTA label
+        name: ctaLabel
+        widget: string
+        required: false
+      - label: CTA URL
+        name: ctaUrl
+        widget: string
+        required: false
+        hint: Absolute or site-relative URL for the primary button.
+      - label: Last updated
+        name: updated
+        widget: string
+        required: false
+        hint: Display date string (e.g. 9 August 2026).
+      - label: Body
+        name: body
+        widget: markdown
