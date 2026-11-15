@@ -21,9 +21,7 @@ const { title, description, cta, class: className = '' } = Astro.props;
         <h2 class="m-0 font-heading text-h3 md:text-h2">{title}</h2>
         {
           description ? (
-            <p class="m-0 text-body-sm leading-relaxed text-fg-inverse">
-              {/* Inverse surface: text-fg-subtle fails AA on bg-bg-inverse (~1.3:1).
-                  Move to --ssd-color-text-inverse-subtle in a later tokens release. */}
+            <p class="m-0 text-body-sm leading-relaxed text-fg-inverse-subtle">
               {description}
             </p>
           ) : null

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -90,21 +90,53 @@ test('marketing pages default to server-rendered dark theme', () => {
   assert.match(home, /brandLogo=\{LOGO_DARK\}/);
 });
 
-test('inverse surfaces use opaque inverse text until a subtle token ships', () => {
+test('inverse surfaces use opaque inverse-subtle text, not fg-subtle', () => {
   const srcDir = join(dirname(fileURLToPath(import.meta.url)), '..');
   const footer = readFileSync(join(srcDir, 'components/shell/SiteFooter.astro'), 'utf8');
   const banner = readFileSync(join(srcDir, 'components/marketing/CtaBanner.astro'), 'utf8');
-  assert.match(footer, /text-fg-inverse/);
+  assert.match(footer, /text-fg-inverse-subtle/);
   assert.doesNotMatch(footer, /class="[^"]*text-fg-subtle/);
-  assert.match(footer, /--ssd-color-text-inverse-subtle/);
-  assert.match(banner, /text-fg-inverse/);
+  assert.doesNotMatch(footer, /opacity-/);
+  assert.match(banner, /text-fg-inverse-subtle/);
   assert.doesNotMatch(banner, /class="[^"]*text-fg-subtle/);
-  assert.match(banner, /--ssd-color-text-inverse-subtle/);
+  assert.doesNotMatch(banner, /opacity-/);
 });
 
-test('tokens stay pinned at 1.3.0', () => {
+test('tokens stay pinned at 1.8.0', () => {
   const pkg = JSON.parse(
     readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../package.json'), 'utf8'),
   );
-  assert.equal(pkg.dependencies['@singleton-sd/tokens'], '1.3.0');
+  assert.equal(pkg.dependencies['@singleton-sd/tokens'], '1.8.0');
+});
+
+test('public pages self-host Plus Jakarta Sans under OFL', () => {
+  const srcDir = join(dirname(fileURLToPath(import.meta.url)), '..');
+  const fonts = join(srcDir, 'fonts');
+  for (const weight of ['400', '500', '700']) {
+    assert.equal(
+      existsSync(join(fonts, `plus-jakarta-sans-latin-${weight}-normal.woff2`)),
+      true,
+    );
+  }
+  assert.match(readFileSync(join(fonts, 'OFL.txt'), 'utf8'), /SIL Open Font License/);
+  const layout = readFileSync(join(srcDir, 'layouts/BaseLayout.astro'), 'utf8');
+  assert.match(layout, /plus-jakarta-sans-latin-400-normal\.woff2\?url/);
+  assert.match(layout, /rel="preload"/);
+  assert.doesNotMatch(layout, /fonts\.googleapis|cdn\.jsdelivr.*jakarta/i);
+  const fontsCss = readFileSync(join(srcDir, 'styles/fonts.css'), 'utf8');
+  assert.match(fontsCss, /font-display:\s*swap/);
+  assert.doesNotMatch(fontsCss, /fonts\.googleapis|cdn\.jsdelivr/i);
+});
+
+test('tailwind maps link, control, and focus tokens', () => {
+  const config = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), '../../tailwind.config.mjs'),
+    'utf8',
+  );
+  assert.match(config, /--ssd-color-text-inverse-subtle/);
+  assert.match(config, /--ssd-color-text-link/);
+  assert.match(config, /--ssd-color-text-link-hover/);
+  assert.match(config, /--ssd-color-border-control/);
+  assert.match(config, /--ssd-color-border-focus/);
+  assert.match(config, /--ssd-border-width-focus-offset/);
 });

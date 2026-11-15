@@ -184,7 +184,7 @@ const reachItems: ReachItem[] = [
             <div class="flex flex-col gap-4">
               <Checkbox id={`${prefix}-consent`} name="consent" required>
                 I agree to the{' '}
-                <a href={privacyHref} class="text-accent underline-offset-2 hover:underline">
+                <a href={privacyHref} class="text-link underline-offset-2 hover:text-link-hover hover:underline">
                   privacy notice
                 </a>
                 .
@@ -214,7 +214,7 @@ const reachItems: ReachItem[] = [
                   This form needs JavaScript. Email{' '}
                   <a
                     href="mailto:support@singletonsd.com"
-                    class="text-accent underline-offset-2 hover:underline"
+                    class="text-link underline-offset-2 hover:text-link-hover hover:underline"
                   >
                     support@singletonsd.com
                   </a>{' '}
@@ -268,7 +268,7 @@ const reachItems: ReachItem[] = [
                     </p>
                     <a
                       href={item.href}
-                      class="text-body-sm font-semibold text-fg transition hover:text-accent"
+                      class="text-body-sm font-semibold text-fg transition hover:text-link-hover"
                     >
                       {item.value}
                     </a>

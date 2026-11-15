@@ -2,6 +2,7 @@
    Both themes; active theme via [data-theme] on <html>. */
 @import '@singleton-sd/tokens/css/light';
 @import '@singleton-sd/tokens/css/dark';
+@import './fonts.css';
 
 @tailwind base;
 @tailwind components;
@@ -51,7 +52,7 @@ body {
 }
 
 .prose-legal a {
-  @apply text-accent underline-offset-2 hover:underline;
+  @apply text-link underline-offset-2 hover:text-link-hover hover:underline;
 }
 
 .prose-legal table {

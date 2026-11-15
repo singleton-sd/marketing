@@ -10,7 +10,12 @@ export default {
           muted: 'var(--ssd-color-text-muted)',
           subtle: 'var(--ssd-color-text-subtle)',
           inverse: 'var(--ssd-color-text-inverse)',
+          'inverse-subtle': 'var(--ssd-color-text-inverse-subtle)',
           brand: 'var(--ssd-color-text-brand)',
+        },
+        link: {
+          DEFAULT: 'var(--ssd-color-text-link)',
+          hover: 'var(--ssd-color-text-link-hover)',
         },
         bg: {
           DEFAULT: 'var(--ssd-color-background-default)',
@@ -31,6 +36,8 @@ export default {
           DEFAULT: 'var(--ssd-color-border-default)',
           muted: 'var(--ssd-color-border-muted)',
           strong: 'var(--ssd-color-border-strong)',
+          control: 'var(--ssd-color-border-control)',
+          focus: 'var(--ssd-color-border-focus)',
         },
         status: {
           error: 'var(--ssd-color-feedback-danger-text)',
@@ -65,6 +72,12 @@ export default {
         md: 'var(--ssd-radius-md)',
         lg: 'var(--ssd-radius-lg)',
         xl: 'var(--ssd-radius-xl)',
+      },
+      outlineColor: {
+        focus: 'var(--ssd-color-border-focus)',
+      },
+      outlineOffset: {
+        focus: 'var(--ssd-border-width-focus-offset)',
       },
       boxShadow: {
         sm: 'var(--mkt-shadow-sm)',
