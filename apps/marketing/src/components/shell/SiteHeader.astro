@@ -44,8 +44,8 @@ function isActive(href: string) {
               class:list={[
                 'relative text-body-sm no-underline transition',
                 active
-                  ? 'font-semibold text-accent'
-                  : 'font-medium text-fg hover:text-accent',
+                  ? 'font-semibold text-link'
+                  : 'font-medium text-fg hover:text-link-hover',
               ]}
               aria-current={active ? 'page' : undefined}
             >
@@ -117,7 +117,7 @@ function isActive(href: string) {
                   href={withBase(link.href, base)}
                   class:list={[
                     'font-heading text-[1.625rem] leading-tight no-underline',
-                    active ? 'text-accent' : 'text-fg',
+                    active ? 'text-link' : 'text-fg',
                   ]}
                   aria-current={active ? 'page' : undefined}
                 >

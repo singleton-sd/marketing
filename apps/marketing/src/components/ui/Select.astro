@@ -44,8 +44,8 @@ const describedBy = error ? `${id}-error` : helper ? `${id}-helper` : undefined;
       aria-describedby={describedBy}
       class:list={[
         'w-full appearance-none rounded-md border bg-bg px-3 py-3 pr-10 text-body-sm text-fg outline-none transition',
-        'focus:border-2 focus:border-accent',
-        error ? 'border-status-error' : 'border-border',
+        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-focus focus-visible:outline-focus',
+        error ? 'border-status-error' : 'border-control',
       ]}
     >
       {
