@@ -139,12 +139,21 @@ export function parseArgs(argv) {
   const out = { tokenCss: [] };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    if (arg === '--app') {
-      out.appRoot = argv[i + 1];
+    if (arg === '--app' || arg === '--tokens') {
+      const value = argv[i + 1];
+      if (value === undefined || value.startsWith('-')) {
+        throw new Error(`${arg} requires a value`);
+      }
+      if (arg === '--app') {
+        out.appRoot = value;
+      } else {
+        out.tokenCss.push(value);
+      }
       i += 1;
-    } else if (arg === '--tokens') {
-      out.tokenCss.push(argv[i + 1] ?? '');
-      i += 1;
+    } else if (arg.startsWith('-')) {
+      throw new Error(`Unknown flag: ${arg}`);
+    } else {
+      throw new Error(`Unexpected argument: ${arg}`);
     }
   }
   return out;
@@ -155,7 +164,13 @@ const isDirectRun = process.argv[1]
   : false;
 
 if (isDirectRun) {
-  const args = parseArgs(process.argv.slice(2));
+  let args;
+  try {
+    args = parseArgs(process.argv.slice(2));
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(1);
+  }
   const appRoot = args.appRoot ?? join(dirname(fileURLToPath(import.meta.url)), '..');
   const tokenCssFiles = args.tokenCss.length > 0 ? args.tokenCss : installedTokenCssFiles();
   const { used, missing } = checkInstalledSsdVars(appRoot, tokenCssFiles);

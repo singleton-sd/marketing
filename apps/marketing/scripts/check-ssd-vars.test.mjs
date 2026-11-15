@@ -9,6 +9,7 @@ import {
   collectMatches,
   definedSsdVars,
   missingSsdVars,
+  parseArgs,
   siteSourceFiles,
   usedSsdVars,
   VAR_DECL_RE,
@@ -62,6 +63,33 @@ test('siteSourceFiles discovers src and public files and skips vendor', () => {
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test('parseArgs rejects unknown flags and --tokens with no value', () => {
+  assert.throws(() => parseArgs(['--unknown']), /Unknown flag: --unknown/);
+  assert.throws(() => parseArgs(['--tokens']), /--tokens requires a value/);
+  assert.throws(() => parseArgs(['--tokens', '--app']), /--tokens requires a value/);
+  assert.deepEqual(parseArgs(['--tokens', '/tmp/tokens.css']), {
+    tokenCss: ['/tmp/tokens.css'],
+  });
+});
+
+test('CLI argument errors exit 1 without a stack', () => {
+  const script = join(dirname(fileURLToPath(import.meta.url)), 'check-ssd-vars.mjs');
+  const run = (args) =>
+    spawnSync(process.execPath, [script, ...args], { encoding: 'utf8' });
+
+  const unknown = run(['--unknown']);
+  assert.equal(unknown.status, 1);
+  assert.equal(unknown.stderr, 'Unknown flag: --unknown\n');
+
+  const positional = run(['oops']);
+  assert.equal(positional.status, 1);
+  assert.equal(positional.stderr, 'Unexpected argument: oops\n');
+
+  const missingApp = run(['--app']);
+  assert.equal(missingApp.status, 1);
+  assert.equal(missingApp.stderr, '--app requires a value\n');
 });
 
 test('CLI exits nonzero when a discovered source uses an undefined token', () => {

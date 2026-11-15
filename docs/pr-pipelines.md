@@ -9,7 +9,9 @@
 Decap GitHub OAuth is served by the API gateway
 (`https://api.singletonsd.com/v1/cms-auth`), not this repository.
 
-GitHub Pages uses `GITHUB_TOKEN` (contents write on `gh-pages`). No Azure SWA
-deploy token and no GitHub Actions secrets are required for hosting.
+`gh-pages` pushes mint the singleton-release GitHub App token
+(`vars.RELEASE_APP_ID` + `secrets.RELEASE_APP_PRIVATE_KEY`) in a deploy job
+that does not run install/build. There is no `GITHUB_TOKEN` fallback on the
+push path. Sticky PR comments still use `GITHUB_TOKEN`.
 
 See [`deployment.md`](./deployment.md) for repo settings, DNS, and cutover order.

@@ -9,8 +9,10 @@ In-repository pull requests run the build gate and publish beneath
 
 1. Builds Astro with `PREVIEW_BASE_PATH=/pr-preview/pr-<number>/` so CSS, JS,
    in-page links, and Markdown `href`/`src` resolve under that prefix. The
-   build job uses `contents: read` and `persist-credentials: false`; only the
-   publish job has write access to `gh-pages`.
+   build job uses `contents: read` and `persist-credentials: false`. Publish
+   and cleanup mint the singleton-release App token and pass it to the
+   gh-pages deploy action; they do not run install/build. Sticky comments
+   keep `GITHUB_TOKEN` with `pull-requests: write`.
 2. Posts a **sticky PR comment** with the live preview link (retried once)
 3. Removes the preview folder (`action: remove`) after confirming the PR is
    still closed, then hides the comment
