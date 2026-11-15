@@ -115,6 +115,15 @@ export function htmlHasTokenCdnLink(html) {
 }
 
 /**
+ * First paint must already be dark — no client theme bootstrap.
+ * @param {string} html
+ * @returns {boolean}
+ */
+export function htmlHasDarkTheme(html) {
+  return /<html\b[^>]*\bdata-theme=(["'])dark\1/i.test(html);
+}
+
+/**
  * @param {string} distDir
  * @returns {string[]}
  */
@@ -182,6 +191,11 @@ export function smokeMarketingTokens(distDir) {
     if (htmlHasTokenCdnLink(html)) {
       errors.push(
         `${distRelative(filePath, dist)} links token sheets from ${TOKEN_CDN}.`,
+      );
+    }
+    if (!htmlHasDarkTheme(html)) {
+      errors.push(
+        `${distRelative(filePath, dist)} is missing server-rendered data-theme="dark".`,
       );
     }
   }

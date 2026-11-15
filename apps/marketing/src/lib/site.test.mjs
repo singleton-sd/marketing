@@ -72,3 +72,39 @@ test('Decap admin assets are relative so GitHub Pages previews resolve', () => {
   assert.match(html, /<meta name="robots" content="noindex, nofollow" \/>/);
   assert.doesNotMatch(html, /(?:href|src)="\/admin\//);
 });
+
+test('marketing pages default to server-rendered dark theme', () => {
+  const srcDir = join(dirname(fileURLToPath(import.meta.url)), '..');
+  const layout = readFileSync(join(srcDir, 'layouts/BaseLayout.astro'), 'utf8');
+  const header = readFileSync(join(srcDir, 'components/shell/SiteHeader.astro'), 'utf8');
+  const footer = readFileSync(join(srcDir, 'components/shell/SiteFooter.astro'), 'utf8');
+  const home = readFileSync(join(srcDir, 'pages/index.astro'), 'utf8');
+  assert.match(layout, /theme = 'dark'/);
+  assert.match(layout, /data-theme=\{theme\}/);
+  assert.doesNotMatch(layout, /theme = 'light'/);
+  assert.doesNotMatch(layout, /localStorage/);
+  assert.match(header, /LOGO_DARK/);
+  assert.doesNotMatch(header, /LOGO_LIGHT/);
+  assert.match(footer, /LOGO_LIGHT/);
+  assert.doesNotMatch(footer, /LOGO_DARK/);
+  assert.match(home, /brandLogo=\{LOGO_DARK\}/);
+});
+
+test('inverse surfaces use opaque inverse text until a subtle token ships', () => {
+  const srcDir = join(dirname(fileURLToPath(import.meta.url)), '..');
+  const footer = readFileSync(join(srcDir, 'components/shell/SiteFooter.astro'), 'utf8');
+  const banner = readFileSync(join(srcDir, 'components/marketing/CtaBanner.astro'), 'utf8');
+  assert.match(footer, /text-fg-inverse/);
+  assert.doesNotMatch(footer, /class="[^"]*text-fg-subtle/);
+  assert.match(footer, /--ssd-color-text-inverse-subtle/);
+  assert.match(banner, /text-fg-inverse/);
+  assert.doesNotMatch(banner, /class="[^"]*text-fg-subtle/);
+  assert.match(banner, /--ssd-color-text-inverse-subtle/);
+});
+
+test('tokens stay pinned at 1.3.0', () => {
+  const pkg = JSON.parse(
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../package.json'), 'utf8'),
+  );
+  assert.equal(pkg.dependencies['@singleton-sd/tokens'], '1.3.0');
+});
