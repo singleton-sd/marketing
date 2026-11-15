@@ -121,12 +121,33 @@ export function installedTokenCssFiles() {
 
 /**
  * @param {string} appRoot
+ * @param {string[]} [tokenCssFiles]
  * @returns {{ used: Set<string>, defined: Set<string>, missing: string[] }}
  */
-export function checkInstalledSsdVars(appRoot) {
+export function checkInstalledSsdVars(appRoot, tokenCssFiles = installedTokenCssFiles()) {
   const used = usedSsdVars(siteSourceFiles(appRoot));
-  const defined = definedSsdVars(installedTokenCssFiles());
+  const defined = definedSsdVars(tokenCssFiles);
   return { used, defined, missing: missingSsdVars(used, defined) };
+}
+
+/**
+ * @param {string[]} argv
+ * @returns {{ appRoot?: string, tokenCss: string[] }}
+ */
+export function parseArgs(argv) {
+  /** @type {{ appRoot?: string, tokenCss: string[] }} */
+  const out = { tokenCss: [] };
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+    if (arg === '--app') {
+      out.appRoot = argv[i + 1];
+      i += 1;
+    } else if (arg === '--tokens') {
+      out.tokenCss.push(argv[i + 1] ?? '');
+      i += 1;
+    }
+  }
+  return out;
 }
 
 const isDirectRun = process.argv[1]
@@ -134,8 +155,10 @@ const isDirectRun = process.argv[1]
   : false;
 
 if (isDirectRun) {
-  const appRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
-  const { used, missing } = checkInstalledSsdVars(appRoot);
+  const args = parseArgs(process.argv.slice(2));
+  const appRoot = args.appRoot ?? join(dirname(fileURLToPath(import.meta.url)), '..');
+  const tokenCssFiles = args.tokenCss.length > 0 ? args.tokenCss : installedTokenCssFiles();
+  const { used, missing } = checkInstalledSsdVars(appRoot, tokenCssFiles);
   if (missing.length > 0) {
     console.error(
       `Undefined --ssd-* vars (not declared by installed @singleton-sd/tokens):\n${missing

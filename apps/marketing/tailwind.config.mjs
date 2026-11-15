@@ -36,8 +36,6 @@ export default {
           DEFAULT: 'var(--ssd-color-border-default)',
           muted: 'var(--ssd-color-border-muted)',
           strong: 'var(--ssd-color-border-strong)',
-          control: 'var(--ssd-color-border-control)',
-          focus: 'var(--ssd-color-border-focus)',
         },
         status: {
           error: 'var(--ssd-color-feedback-danger-text)',
@@ -72,6 +70,9 @@ export default {
         md: 'var(--ssd-radius-md)',
         lg: 'var(--ssd-radius-lg)',
         xl: 'var(--ssd-radius-xl)',
+      },
+      borderColor: {
+        control: 'var(--ssd-color-border-control)',
       },
       outlineColor: {
         focus: 'var(--ssd-color-border-focus)',

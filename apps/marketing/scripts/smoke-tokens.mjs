@@ -22,6 +22,9 @@ export const REQUIRED_SSD_VARS = [
   '--ssd-color-background-default',
 ];
 
+/** Selectors that must exist in compiled site CSS, not only in token declarations. */
+export const REQUIRED_SSD_UTILITIES = ['.border-control'];
+
 const TOKEN_CDN = 'tokens.design.singletonsd.com';
 /** Matches --fg-* only when used as a CSS custom property (var() or declaration). */
 const LEGACY_FG_RE = /(?:var\s*\(|(?:^|[{;,\s]))(--fg-)/m;
@@ -96,6 +99,18 @@ export function isVendorCss(filePath, distDir) {
  */
 export function missingRequiredSsdVars(css, requiredVars = REQUIRED_SSD_VARS) {
   return requiredVars.filter((name) => !css.includes(name));
+}
+
+/**
+ * @param {string} css
+ * @param {string[]} requiredUtilities
+ * @returns {string[]}
+ */
+export function missingRequiredSsdUtilities(css, requiredUtilities = REQUIRED_SSD_UTILITIES) {
+  return requiredUtilities.filter((selector) => {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return !new RegExp(`${escaped}\\s*\\{`).test(css);
+  });
 }
 
 /**
@@ -179,6 +194,12 @@ export function smokeMarketingTokens(distDir) {
   if (missingSsd.length > 0) {
     errors.push(
       `Built site CSS is missing published token vars: ${missingSsd.join(', ')}.`,
+    );
+  }
+  const missingUtilities = missingRequiredSsdUtilities(siteCss);
+  if (missingUtilities.length > 0) {
+    errors.push(
+      `Built site CSS is missing generated utilities: ${missingUtilities.join(', ')}.`,
     );
   }
 

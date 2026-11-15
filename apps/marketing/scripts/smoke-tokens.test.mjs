@@ -7,6 +7,7 @@ import {
   cssHasLegacyFgVars,
   htmlHasDarkTheme,
   htmlHasTokenCdnLink,
+  missingRequiredSsdUtilities,
   missingRequiredSsdVars,
   smokeMarketingTokens,
 } from './smoke-tokens.mjs';
@@ -31,6 +32,7 @@ const VALID_SITE_CSS = `
   --ssd-color-background-default: #fff;
 }
 .text-fg { color: var(--ssd-color-text-default); }
+.border-control { border-color: var(--ssd-color-border-control); }
 `;
 
 const VALID_VENDOR_CSS = `
@@ -69,6 +71,14 @@ test('missingRequiredSsdVars reports unpublished keys', () => {
     missingRequiredSsdVars(
       '--ssd-color-text-default: #111; --ssd-color-background-default: #fff;',
     ),
+    [],
+  );
+});
+
+test('missingRequiredSsdUtilities requires the compiled control-border class', () => {
+  assert.deepEqual(missingRequiredSsdUtilities('.text-fg { color: black; }'), ['.border-control']);
+  assert.deepEqual(
+    missingRequiredSsdUtilities('.border-control{border-color:var(--ssd-color-border-control)}'),
     [],
   );
 });

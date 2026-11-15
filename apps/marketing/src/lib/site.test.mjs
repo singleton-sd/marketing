@@ -124,19 +124,31 @@ test('public pages self-host Plus Jakarta Sans under OFL', () => {
   assert.match(layout, /rel="preload"/);
   assert.doesNotMatch(layout, /fonts\.googleapis|cdn\.jsdelivr.*jakarta/i);
   const fontsCss = readFileSync(join(srcDir, 'styles/fonts.css'), 'utf8');
-  assert.match(fontsCss, /font-display:\s*swap/);
   assert.doesNotMatch(fontsCss, /fonts\.googleapis|cdn\.jsdelivr/i);
+  for (const weight of ['400', '500', '700']) {
+    const face = new RegExp(
+      `@font-face\\s*\\{[^{}]*font-family:\\s*'Plus Jakarta Sans'[^{}]*font-display:\\s*swap[^{}]*font-weight:\\s*${weight}[^{}]*src:\\s*url\\('\\.\\./fonts/plus-jakarta-sans-latin-${weight}-normal\\.woff2'\\)`,
+      's',
+    );
+    assert.match(fontsCss, face);
+  }
 });
 
 test('tailwind maps link, control, and focus tokens', () => {
-  const config = readFileSync(
-    join(dirname(fileURLToPath(import.meta.url)), '../../tailwind.config.mjs'),
-    'utf8',
-  );
+  const appDir = join(dirname(fileURLToPath(import.meta.url)), '../..');
+  const config = readFileSync(join(appDir, 'tailwind.config.mjs'), 'utf8');
   assert.match(config, /--ssd-color-text-inverse-subtle/);
   assert.match(config, /--ssd-color-text-link/);
   assert.match(config, /--ssd-color-text-link-hover/);
-  assert.match(config, /--ssd-color-border-control/);
+  assert.match(config, /borderColor:\s*\{\s*control:\s*'var\(--ssd-color-border-control\)'/);
   assert.match(config, /--ssd-color-border-focus/);
   assert.match(config, /--ssd-border-width-focus-offset/);
+  for (const file of [
+    'src/components/ui/Checkbox.astro',
+    'src/components/ui/TextInput.astro',
+    'src/components/ui/TextArea.astro',
+    'src/components/ui/Select.astro',
+  ]) {
+    assert.match(readFileSync(join(appDir, file), 'utf8'), /\bborder-control\b/);
+  }
 });

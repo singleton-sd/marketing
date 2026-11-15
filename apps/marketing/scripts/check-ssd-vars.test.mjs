@@ -1,12 +1,15 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 import {
   collectMatches,
   definedSsdVars,
   missingSsdVars,
+  siteSourceFiles,
   usedSsdVars,
   VAR_DECL_RE,
   VAR_USE_RE,
@@ -37,6 +40,43 @@ test('missingSsdVars reports used names the package does not declare', () => {
     const used = usedSsdVars([join(root, 'src', 'a.css'), join(root, 'src', 'b.css')]);
     const defined = definedSsdVars([join(root, 'tokens.css')]);
     assert.deepEqual(missingSsdVars(used, defined), ['--ssd-missing']);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('siteSourceFiles discovers src and public files and skips vendor', () => {
+  const root = mkdtempSync(join(tmpdir(), 'mkt-ssd-src-'));
+  try {
+    mkdirSync(join(root, 'src'), { recursive: true });
+    mkdirSync(join(root, 'public', 'vendor'), { recursive: true });
+    writeFileSync(join(root, 'src', 'a.css'), 'color: var(--ssd-color-text-link);');
+    writeFileSync(join(root, 'public', 'ok.css'), 'color: var(--ssd-color-text-muted);');
+    writeFileSync(join(root, 'public', 'vendor', 'tokens.css'), 'color: var(--ssd-missing);');
+    writeFileSync(join(root, 'tailwind.config.mjs'), 'colors: { fg: "var(--ssd-color-text-default)" }');
+    const files = siteSourceFiles(root);
+    assert.equal(files.some((filePath) => filePath.endsWith(`${join('src', 'a.css')}`)), true);
+    assert.equal(files.some((filePath) => filePath.endsWith(`${join('public', 'ok.css')}`)), true);
+    assert.equal(files.some((filePath) => filePath.includes(`${join('vendor', 'tokens.css')}`)), false);
+    assert.equal(files.some((filePath) => filePath.endsWith('tailwind.config.mjs')), true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('CLI exits nonzero when a discovered source uses an undefined token', () => {
+  const root = mkdtempSync(join(tmpdir(), 'mkt-ssd-cli-'));
+  try {
+    mkdirSync(join(root, 'src'), { recursive: true });
+    writeFileSync(join(root, 'src', 'a.css'), 'color: var(--ssd-missing);');
+    const tokens = join(root, 'tokens.css');
+    writeFileSync(tokens, '--ssd-color-text-link: #abc;');
+    const script = join(dirname(fileURLToPath(import.meta.url)), 'check-ssd-vars.mjs');
+    const result = spawnSync(process.execPath, [script, '--app', root, '--tokens', tokens], {
+      encoding: 'utf8',
+    });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /--ssd-missing/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
