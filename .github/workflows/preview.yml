@@ -28,7 +28,6 @@ jobs:
     permissions:
       contents: read
     env:
-      PREVIEW_BASE_PATH: /pr-preview/pr-${{ github.event.number }}/
       PREVIEW_DIST_NAME: preview-dist-${{ github.event.number }}-${{ github.event.pull_request.head.sha }}
     steps:
       - name: Check out repository
@@ -68,6 +67,7 @@ jobs:
       - name: Build preview site
         run: pnpm --filter @singleton-sd/marketing... run build
         env:
+          PREVIEW_BASE_PATH: /pr-preview/pr-${{ github.event.number }}/
           PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}
           PUBLIC_LEADS_API_URL: ${{ vars.PUBLIC_LEADS_API_URL }}
 
@@ -75,6 +75,8 @@ jobs:
         run: pnpm --filter @singleton-sd/marketing run test:smoke
 
       - name: Check preview asset paths
+        env:
+          PREVIEW_BASE_PATH: /pr-preview/pr-${{ github.event.number }}/
         run: node scripts/check-pages-asset-paths.mjs apps/marketing/dist "$PREVIEW_BASE_PATH"
 
       - name: Upload preview dist
