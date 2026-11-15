@@ -97,6 +97,8 @@ test('inverse surfaces use opaque inverse-subtle text, not fg-subtle', () => {
   assert.match(footer, /text-fg-inverse-subtle/);
   assert.doesNotMatch(footer, /class="[^"]*text-fg-subtle/);
   assert.doesNotMatch(footer, /opacity-/);
+  assert.doesNotMatch(footer, /hover:text-link-hover/);
+  assert.match(footer, /hover:text-fg-inverse/);
   assert.match(banner, /text-fg-inverse-subtle/);
   assert.doesNotMatch(banner, /class="[^"]*text-fg-subtle/);
   assert.doesNotMatch(banner, /opacity-/);
