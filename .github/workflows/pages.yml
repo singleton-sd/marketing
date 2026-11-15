@@ -1,5 +1,10 @@
 # Production GitHub Pages deploy on push to main.
-# House pattern: singleton-sd/poc-inkads-marketing `.github/workflows/pages.yml`
+# House pattern: singleton-sd/leasemate-assets `.github/workflows/pages.yml`
+#
+# Build is unauthenticated (contents: read, no secrets). Deploy checks out
+# for JamesIves (needs a git directory), downloads dist, then mints the
+# singleton-release App token as its last setup step and deploys with that
+# token only — never GITHUB_TOKEN.
 name: Deploy production GitHub Pages
 
 on:
@@ -13,19 +18,23 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  build-and-deploy:
+  build:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    name: Build + GitHub Pages production
+    name: Build production site
+    permissions:
+      contents: read
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
         with:
           version: 9.15.0
           run_install: false
@@ -65,9 +74,45 @@ jobs:
       - name: Check production asset paths
         run: node scripts/check-pages-asset-paths.mjs apps/marketing/dist /
 
-      - name: Deploy production site
-        uses: JamesIves/github-pages-deploy-action@v4.8.0
+      - name: Upload production dist
+        uses: actions/upload-artifact@v4
         with:
+          name: pages-dist
+          path: apps/marketing/dist
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    name: Deploy production GitHub Pages
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Download production dist
+        uses: actions/download-artifact@v4
+        with:
+          name: pages-dist
+          path: apps/marketing/dist
+
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: app-token
+        with:
+          app-id: ${{ vars.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          owner: singleton-sd
+          repositories: marketing
+          permission-contents: write
+
+      - name: Deploy production site
+        uses: JamesIves/github-pages-deploy-action@d92aa235d04922e8f08b40ce78cc5442fcfbfa2f # v4.8.0
+        with:
+          token: ${{ steps.app-token.outputs.token }}
           branch: gh-pages
           folder: apps/marketing/dist
           clean: true

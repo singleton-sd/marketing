@@ -9,6 +9,7 @@ import {
   collectMatches,
   definedSsdVars,
   missingSsdVars,
+  parseArgs,
   siteSourceFiles,
   usedSsdVars,
   VAR_DECL_RE,
@@ -62,6 +63,15 @@ test('siteSourceFiles discovers src and public files and skips vendor', () => {
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test('parseArgs rejects unknown flags and --tokens with no value', () => {
+  assert.throws(() => parseArgs(['--unknown']), /Unknown flag: --unknown/);
+  assert.throws(() => parseArgs(['--tokens']), /--tokens requires a value/);
+  assert.throws(() => parseArgs(['--tokens', '--app']), /--tokens requires a value/);
+  assert.deepEqual(parseArgs(['--tokens', '/tmp/tokens.css']), {
+    tokenCss: ['/tmp/tokens.css'],
+  });
 });
 
 test('CLI exits nonzero when a discovered source uses an undefined token', () => {
