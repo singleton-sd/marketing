@@ -2,7 +2,7 @@
 import Button from '../ui/Button.astro';
 import Icon from '../ui/Icon.astro';
 import { appCta, isActivePath, primaryNav, withBase } from '../../lib/nav';
-import { LOGO_LIGHT, SITE_NAME } from '../../lib/site';
+import { LOGO_DARK, SITE_NAME } from '../../lib/site';
 
 interface Props {
   currentPath?: string;
@@ -25,7 +25,7 @@ function isActive(href: string) {
       aria-label={`${SITE_NAME} — home`}
     >
       <img
-        src={LOGO_LIGHT}
+        src={LOGO_DARK}
         alt=""
         width="44"
         height="44"
@@ -92,7 +92,7 @@ function isActive(href: string) {
             aria-label={`${SITE_NAME} — home`}
           >
             <img
-              src={LOGO_LIGHT}
+              src={LOGO_DARK}
               alt=""
               width="44"
               height="44"
