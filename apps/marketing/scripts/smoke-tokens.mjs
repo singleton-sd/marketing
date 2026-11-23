@@ -22,6 +22,9 @@ export const REQUIRED_SSD_VARS = [
   '--ssd-color-background-default',
 ];
 
+/** Selectors that must exist in compiled site CSS, not only in token declarations. */
+export const REQUIRED_SSD_UTILITIES = ['.border-control'];
+
 const TOKEN_CDN = 'tokens.design.singletonsd.com';
 /** Matches --fg-* only when used as a CSS custom property (var() or declaration). */
 const LEGACY_FG_RE = /(?:var\s*\(|(?:^|[{;,\s]))(--fg-)/m;
@@ -100,6 +103,18 @@ export function missingRequiredSsdVars(css, requiredVars = REQUIRED_SSD_VARS) {
 
 /**
  * @param {string} css
+ * @param {string[]} requiredUtilities
+ * @returns {string[]}
+ */
+export function missingRequiredSsdUtilities(css, requiredUtilities = REQUIRED_SSD_UTILITIES) {
+  return requiredUtilities.filter((selector) => {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return !new RegExp(`${escaped}\\s*\\{`).test(css);
+  });
+}
+
+/**
+ * @param {string} css
  * @returns {boolean}
  */
 export function cssHasLegacyFgVars(css) {
@@ -112,6 +127,20 @@ export function cssHasLegacyFgVars(css) {
  */
 export function htmlHasTokenCdnLink(html) {
   return html.toLowerCase().includes(TOKEN_CDN);
+}
+
+/**
+ * First paint must already be dark — no client theme bootstrap.
+ * Reads data-theme on the document <html> opening tag only, so comments and
+ * attributes like x-data-theme cannot pass.
+ * @param {string} html
+ * @returns {boolean}
+ */
+export function htmlHasDarkTheme(html) {
+  const openTag = html.match(/<html\b[^>]*>/i)?.[0];
+  if (!openTag) return false;
+  const quoted = openTag.match(/(?:^|[\s/])data-theme\s*=\s*(["'])([\s\S]*?)\1/i);
+  return quoted?.[2].trim().toLowerCase() === 'dark';
 }
 
 /**
@@ -167,6 +196,12 @@ export function smokeMarketingTokens(distDir) {
       `Built site CSS is missing published token vars: ${missingSsd.join(', ')}.`,
     );
   }
+  const missingUtilities = missingRequiredSsdUtilities(siteCss);
+  if (missingUtilities.length > 0) {
+    errors.push(
+      `Built site CSS is missing generated utilities: ${missingUtilities.join(', ')}.`,
+    );
+  }
 
   for (const filePath of cssFiles) {
     const css = readFileSync(filePath, 'utf8');
@@ -182,6 +217,12 @@ export function smokeMarketingTokens(distDir) {
     if (htmlHasTokenCdnLink(html)) {
       errors.push(
         `${distRelative(filePath, dist)} links token sheets from ${TOKEN_CDN}.`,
+      );
+    }
+    // Shipped pages are dark-only; there is no theme toggle or light opt-out.
+    if (!htmlHasDarkTheme(html)) {
+      errors.push(
+        `${distRelative(filePath, dist)} is missing server-rendered data-theme="dark".`,
       );
     }
   }

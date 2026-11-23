@@ -31,10 +31,9 @@ Azure resources from an agent. See [`docs/deployment.md`](docs/deployment.md).
 
 - Feature branches: `feature/MKT-<n>-<kebab>` in a worktree when possible
 - Human PRs get Pages previews from `.github/workflows/preview.yml`
-- Hosting uses `GITHUB_TOKEN` only. Releases use the singleton-release GitHub
-  App (`vars.RELEASE_APP_ID` + `secrets.RELEASE_APP_PRIVATE_KEY`), which is on
-  the main ruleset bypass list. Never fall back to a PAT or `GITHUB_TOKEN` for
-  the release push.
+- Never add extra hosting secrets. `gh-pages` pushes and release commits mint
+  the singleton-release GitHub App token (`vars.RELEASE_APP_ID` +
+  `secrets.RELEASE_APP_PRIVATE_KEY`); do not fall back to `GITHUB_TOKEN` or a PAT
 
 ## Sources of truth (poc)
 

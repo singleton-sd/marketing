@@ -39,8 +39,8 @@ importers:
         specifier: ^5.1.4
         version: 5.1.5(astro@4.16.19(@types/node@24.13.3)(rollup@4.62.4)(typescript@5.9.3))(tailwindcss@3.4.19(yaml@2.9.0))(ts-node@10.9.2(@types/node@24.13.3)(typescript@5.9.3))
       '@singleton-sd/tokens':
-        specifier: 1.3.0
-        version: 1.3.0
+        specifier: 1.8.0
+        version: 1.8.0
       astro:
         specifier: ^4.16.18
         version: 4.16.19(@types/node@24.13.3)(rollup@4.62.4)(typescript@5.9.3)
@@ -741,8 +741,8 @@ packages:
   '@shikijs/vscode-textmate@10.0.2':
     resolution: {integrity: sha512-83yeghZ2xxin3Nj8z1NMd/NCuca+gsYXswywDy5bHvwlWL8tpTQmzGeUuHd9FC3E/SBEMvzJRwWEOz5gGes9Qg==}
 
-  '@singleton-sd/tokens@1.3.0':
-    resolution: {integrity: sha1-ERZjS4tz7E0TIOEUVhjkyC8URRA=, tarball: https://gitlab.com/api/v4/projects/70589530/packages/npm/@singleton-sd/tokens/-/@singleton-sd/tokens-1.3.0.tgz}
+  '@singleton-sd/tokens@1.8.0':
+    resolution: {integrity: sha1-6cArgDnJzsJPZyDdjtWDfS1FLc4=, tarball: https://gitlab.com/api/v4/projects/70589530/packages/npm/@singleton-sd/tokens/-/@singleton-sd/tokens-1.8.0.tgz}
     engines: {node: 22.x}
 
   '@tsconfig/node10@1.0.12':
@@ -3198,7 +3198,7 @@ snapshots:
 
   '@shikijs/vscode-textmate@10.0.2': {}
 
-  '@singleton-sd/tokens@1.3.0': {}
+  '@singleton-sd/tokens@1.8.0': {}
 
   '@tsconfig/node10@1.0.12': {}
 

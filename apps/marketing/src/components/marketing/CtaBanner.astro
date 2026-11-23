@@ -21,7 +21,9 @@ const { title, description, cta, class: className = '' } = Astro.props;
         <h2 class="m-0 font-heading text-h3 md:text-h2">{title}</h2>
         {
           description ? (
-            <p class="m-0 text-body-sm leading-relaxed text-fg-subtle">{description}</p>
+            <p class="m-0 text-body-sm leading-relaxed text-fg-inverse-subtle">
+              {description}
+            </p>
           ) : null
         }
       </div>

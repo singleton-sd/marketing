@@ -1,15 +1,19 @@
 # PR preview on GitHub Pages at /pr-preview/pr-<number>/.
-# House pattern: singleton-sd/poc-inkads-marketing `.github/workflows/preview.yml`
-# (without that site's visual-review job — this repo has no screenshot baselines).
+# House pattern: singleton-sd/leasemate-assets `.github/workflows/pages.yml`
+# (split read-only build from App-token deploy; this site has no visual-review).
 #
 # Build runs PR-controlled install/test/build with contents:read and no
-# persisted credentials. Publish/cleanup use a write token but do not execute
-# package scripts from the PR.
+# persisted credentials. Publish/cleanup mint the singleton-release App token
+# as their last step before rossjrw/pr-preview-action and never fall back to
+# GITHUB_TOKEN. Sticky comments keep GITHUB_TOKEN with pull-requests: write.
 name: Deploy pull request preview
 
 on:
   pull_request:
     types: [opened, reopened, synchronize, closed]
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -23,20 +27,22 @@ jobs:
       cancel-in-progress: true
     permissions:
       contents: read
+    env:
+      PREVIEW_DIST_NAME: preview-dist-${{ github.event.number }}-${{ github.event.pull_request.head.sha }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
         with:
           version: 9.15.0
           run_install: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
@@ -69,12 +75,14 @@ jobs:
         run: pnpm --filter @singleton-sd/marketing run test:smoke
 
       - name: Check preview asset paths
-        run: node scripts/check-pages-asset-paths.mjs apps/marketing/dist /pr-preview/pr-${{ github.event.number }}/
+        env:
+          PREVIEW_BASE_PATH: /pr-preview/pr-${{ github.event.number }}/
+        run: node scripts/check-pages-asset-paths.mjs apps/marketing/dist "$PREVIEW_BASE_PATH"
 
       - name: Upload preview dist
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: preview-dist-${{ github.event.number }}
+          name: ${{ env.PREVIEW_DIST_NAME }}
           path: apps/marketing/dist
           include-hidden-files: true
           if-no-files-found: error
@@ -89,29 +97,35 @@ jobs:
     concurrency:
       group: pages-publish
       cancel-in-progress: false
-    permissions:
-      contents: write
-      pull-requests: write
+    env:
+      PREVIEW_DIST_NAME: preview-dist-${{ github.event.number }}-${{ github.event.pull_request.head.sha }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Set preview URLs
-        id: urls
-        run: |
-          echo "preview_url=https://www.singletonsd.com/pr-preview/pr-${{ github.event.number }}/" >> "$GITHUB_OUTPUT"
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Download preview dist
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          name: preview-dist-${{ github.event.number }}
+          name: ${{ env.PREVIEW_DIST_NAME }}
           path: apps/marketing/dist
+
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: app-token
+        with:
+          app-id: ${{ vars.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          owner: singleton-sd
+          repositories: marketing
+          permission-contents: write
 
       - name: Deploy preview
         id: preview
         continue-on-error: true
         uses: rossjrw/pr-preview-action@ffa7509e91a3ec8dfc2e5536c4d5c1acdf7a6de9 # v1.8.1
         with:
+          token: ${{ steps.app-token.outputs.token }}
           source-dir: apps/marketing/dist
           preview-branch: gh-pages
           pages-base-url: https://www.singletonsd.com
@@ -122,12 +136,27 @@ jobs:
         if: steps.preview.outcome == 'failure'
         uses: rossjrw/pr-preview-action@ffa7509e91a3ec8dfc2e5536c4d5c1acdf7a6de9 # v1.8.1
         with:
+          token: ${{ steps.app-token.outputs.token }}
           source-dir: apps/marketing/dist
           preview-branch: gh-pages
           pages-base-url: https://www.singletonsd.com
           umbrella-dir: pr-preview
           comment: false
 
+  comment:
+    needs: publish
+    if: >
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      contains(fromJSON('["opened","reopened","synchronize"]'), github.event.action)
+    runs-on: ubuntu-latest
+    name: Post sticky preview comment
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      PREVIEW_URL: https://www.singletonsd.com/pr-preview/pr-${{ github.event.number }}/
+      PR_NUMBER: ${{ github.event.number }}
+    steps:
       - name: Post sticky preview comment
         id: preview_comment
         continue-on-error: true
@@ -138,9 +167,9 @@ jobs:
           message: |
             ## Preview
 
-            🔗 **[Open live preview](${{ steps.urls.outputs.preview_url }})**
+            🔗 **[Open live preview](${{ env.PREVIEW_URL }})**
 
-            Built with Astro `base` `/pr-preview/pr-${{ github.event.number }}/` and published to the `gh-pages` branch (production files are left in place).
+            Built with Astro `base` `/pr-preview/pr-${{ env.PR_NUMBER }}/` and published to the `gh-pages` branch (production files are left in place).
 
             Preview URLs resolve on `www.singletonsd.com` after the GitHub Pages custom-domain cutover. Fork PRs are not published.
 
@@ -155,9 +184,9 @@ jobs:
           message: |
             ## Preview
 
-            🔗 **[Open live preview](${{ steps.urls.outputs.preview_url }})**
+            🔗 **[Open live preview](${{ env.PREVIEW_URL }})**
 
-            Built with Astro `base` `/pr-preview/pr-${{ github.event.number }}/` and published to the `gh-pages` branch (production files are left in place).
+            Built with Astro `base` `/pr-preview/pr-${{ env.PR_NUMBER }}/` and published to the `gh-pages` branch (production files are left in place).
 
             Preview URLs resolve on `www.singletonsd.com` after the GitHub Pages custom-domain cutover. Fork PRs are not published.
 
@@ -173,11 +202,13 @@ jobs:
       group: pages-publish
       cancel-in-progress: false
     permissions:
-      contents: write
-      pull-requests: write
+      contents: read
+      pull-requests: read
     steps:
       - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Confirm pull request is still closed
         id: pr_state
@@ -194,12 +225,23 @@ jobs:
               core.info(`PR is ${data.state}; skipping preview removal.`);
             }
 
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        if: steps.pr_state.outputs.closed == 'true'
+        id: app-token
+        with:
+          app-id: ${{ vars.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          owner: singleton-sd
+          repositories: marketing
+          permission-contents: write
+
       - name: Remove preview
         id: remove_preview
         if: steps.pr_state.outputs.closed == 'true'
         continue-on-error: true
         uses: rossjrw/pr-preview-action@ffa7509e91a3ec8dfc2e5536c4d5c1acdf7a6de9 # v1.8.1
         with:
+          token: ${{ steps.app-token.outputs.token }}
           action: remove
           source-dir: apps/marketing/dist
           preview-branch: gh-pages
@@ -211,12 +253,38 @@ jobs:
         if: steps.pr_state.outputs.closed == 'true' && steps.remove_preview.outcome == 'failure'
         uses: rossjrw/pr-preview-action@ffa7509e91a3ec8dfc2e5536c4d5c1acdf7a6de9 # v1.8.1
         with:
+          token: ${{ steps.app-token.outputs.token }}
           action: remove
           source-dir: apps/marketing/dist
           preview-branch: gh-pages
           pages-base-url: https://www.singletonsd.com
           umbrella-dir: pr-preview
           comment: false
+
+  hide-comment:
+    if: >
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    name: Hide sticky preview comment
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Confirm pull request is still closed
+        id: pr_state
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            const { data } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+            core.setOutput('closed', data.state === 'closed' ? 'true' : 'false');
+            if (data.state !== 'closed') {
+              core.info(`PR is ${data.state}; skipping preview comment hide.`);
+            }
 
       - name: Hide sticky preview comment
         id: hide_comment

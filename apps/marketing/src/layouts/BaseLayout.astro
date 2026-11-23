@@ -2,6 +2,8 @@
 import '../styles/global.css';
 import SiteFooter from '../components/shell/SiteFooter.astro';
 import SiteHeader from '../components/shell/SiteHeader.astro';
+import fontRegularUrl from '../fonts/plus-jakarta-sans-latin-400-normal.woff2?url';
+import { serializeJsonLd } from '../lib/json-ld.mjs';
 import {
   FAVICON,
   ORGANIZATION_LOGO,
@@ -14,7 +16,6 @@ interface Props {
   title: string;
   description?: string;
   ogImage?: string;
-  theme?: 'light' | 'dark';
   showShell?: boolean;
 }
 
@@ -22,7 +23,6 @@ const {
   title,
   description = '',
   ogImage,
-  theme = 'light',
   showShell = true,
 } = Astro.props;
 
@@ -52,13 +52,20 @@ const jsonLd = {
 ---
 
 <!doctype html>
-<html lang="en" data-theme={theme}>
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     {description ? <meta name="description" content={description} /> : null}
     {isPreview ? <meta name="robots" content="noindex, nofollow" /> : null}
     <title>{title}</title>
+    <link
+      rel="preload"
+      href={fontRegularUrl}
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
     <link rel="canonical" href={canonicalUrl} />
     <link rel="manifest" href={FAVICON.manifest} />
     <link rel="apple-touch-icon" href={FAVICON.appleTouch} />
@@ -75,7 +82,11 @@ const jsonLd = {
     <meta name="twitter:title" content={title} />
     {description ? <meta name="twitter:description" content={description} /> : null}
     <meta name="twitter:image" content={resolvedOgImage} />
-    <script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={serializeJsonLd(jsonLd)}
+    />
   </head>
   <body class="flex min-h-screen flex-col bg-bg text-fg antialiased">
     {showShell ? <SiteHeader currentPath={currentPath} /> : null}

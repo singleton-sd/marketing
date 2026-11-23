@@ -5,7 +5,9 @@ import { dirname, join } from 'node:path';
 import test from 'node:test';
 import {
   cssHasLegacyFgVars,
+  htmlHasDarkTheme,
   htmlHasTokenCdnLink,
+  missingRequiredSsdUtilities,
   missingRequiredSsdVars,
   smokeMarketingTokens,
 } from './smoke-tokens.mjs';
@@ -30,6 +32,7 @@ const VALID_SITE_CSS = `
   --ssd-color-background-default: #fff;
 }
 .text-fg { color: var(--ssd-color-text-default); }
+.border-control { border-color: var(--ssd-color-border-control); }
 `;
 
 const VALID_VENDOR_CSS = `
@@ -39,10 +42,10 @@ const VALID_VENDOR_CSS = `
 }
 `;
 
-const VALID_HTML = `<!doctype html><html><link rel="stylesheet" href="/_astro/index.css" /></html>`;
+const VALID_HTML = `<!doctype html><html lang="en" data-theme="dark"><link rel="stylesheet" href="/_astro/index.css" /></html>`;
 
 const VALID_ADMIN_HTML = `<!doctype html>
-<html>
+<html lang="en" data-theme="dark">
   <link rel="stylesheet" href="/admin/vendor/tokens-dark.css" />
 </html>
 `;
@@ -72,6 +75,14 @@ test('missingRequiredSsdVars reports unpublished keys', () => {
   );
 });
 
+test('missingRequiredSsdUtilities requires the compiled control-border class', () => {
+  assert.deepEqual(missingRequiredSsdUtilities('.text-fg { color: black; }'), ['.border-control']);
+  assert.deepEqual(
+    missingRequiredSsdUtilities('.border-control{border-color:var(--ssd-color-border-control)}'),
+    [],
+  );
+});
+
 test('cssHasLegacyFgVars ignores product .text-fg and --pk-fg', () => {
   assert.equal(cssHasLegacyFgVars('.text-fg { color: var(--ssd-color-text-default); }'), false);
   assert.equal(cssHasLegacyFgVars('--pk-fg: var(--ssd-color-text-default);'), false);
@@ -84,6 +95,19 @@ test('htmlHasTokenCdnLink detects token gallery host', () => {
     htmlHasTokenCdnLink('<link href="https://tokens.design.singletonsd.com/css/dark.css" />'),
     true,
   );
+});
+
+test('htmlHasDarkTheme requires data-theme on html', () => {
+  assert.equal(htmlHasDarkTheme(VALID_HTML), true);
+  assert.equal(htmlHasDarkTheme('<html data-theme=\'dark\'>'), true);
+  assert.equal(htmlHasDarkTheme('<html lang="en">'), false);
+  assert.equal(htmlHasDarkTheme('<html data-theme="light">'), false);
+  assert.equal(htmlHasDarkTheme('<div data-theme="dark"></div>'), false);
+  assert.equal(
+    htmlHasDarkTheme('<html><!-- <html data-theme="dark"> --></html>'),
+    false,
+  );
+  assert.equal(htmlHasDarkTheme('<html x-data-theme="dark">'), false);
 });
 
 test('smokeMarketingTokens accepts a valid dist tree', () => {
@@ -133,10 +157,25 @@ test('smokeMarketingTokens fails when HTML loads the token CDN', () => {
   const dist = writeDist({
     ...validTree(),
     'index.html':
-      '<link rel="stylesheet" href="https://tokens.design.singletonsd.com/css/dark.css" />',
+      '<html data-theme="dark"><link rel="stylesheet" href="https://tokens.design.singletonsd.com/css/dark.css" /></html>',
   });
   try {
     assert.throws(() => smokeMarketingTokens(dist), /tokens\.design\.singletonsd\.com/);
+  } finally {
+    rmSync(dist, { recursive: true, force: true });
+  }
+});
+
+test('smokeMarketingTokens fails when HTML is missing data-theme="dark"', () => {
+  const dist = writeDist({
+    ...validTree(),
+    'index.html': '<!doctype html><html><link rel="stylesheet" href="/_astro/index.css" /></html>',
+  });
+  try {
+    assert.throws(
+      () => smokeMarketingTokens(dist),
+      /missing server-rendered data-theme="dark"/,
+    );
   } finally {
     rmSync(dist, { recursive: true, force: true });
   }
