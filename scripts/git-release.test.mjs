@@ -129,6 +129,7 @@ test('selectRetryTargets recovers a tagged HEAD after GitHub Release creation fa
       version: '0.8.0',
       tag: '@singleton-sd/marketing@0.8.0',
       path: 'apps/marketing',
+      sha: headSha,
     },
   ]);
 });
@@ -155,43 +156,71 @@ test('selectRetryTargets skips independent packages that were not bumped', () =>
     headMessage: 'chore(release): v0.8.0 [skip ci]',
   });
   assert.deepEqual(
-    targets.map((target) => target.tag),
-    ['@singleton-sd/marketing@0.8.0'],
+    targets.map((target) => ({ tag: target.tag, sha: target.sha })),
+    [{ tag: '@singleton-sd/marketing@0.8.0', sha: 'release-sha' }],
   );
 });
 
-test('pushCommitToMain returns the rebased HEAD after a rejected push', () => {
-  const original = 'aaa111';
-  const rebased = 'bbb222';
-  let head = original;
-  let pushes = 0;
+test('selectRetryTargets skips a complete publication after HEAD moves', () => {
+  const targets = selectRetryTargets({
+    packages: [
+      { name: '@singleton-sd/marketing', version: '0.8.0', path: 'apps/marketing' },
+    ],
+    lastFor: () => ({ tag: '@singleton-sd/marketing@0.8.0', version: '0.8.0' }),
+    lastTagShaFor: () => 'release-sha',
+    headSha: 'docs-sha',
+    headMessage: 'docs: MKT-12 Update README',
+    githubReleaseMissingFor: () => false,
+  });
+  assert.deepEqual(targets, []);
+});
+
+test('selectRetryTargets recovers a missing GitHub Release after HEAD moves', () => {
+  const tagSha = 'release-sha';
+  const docsHead = 'docs-sha';
+  const targets = selectRetryTargets({
+    packages: [
+      { name: '@singleton-sd/marketing', version: '0.8.0', path: 'apps/marketing' },
+    ],
+    lastFor: () => ({ tag: '@singleton-sd/marketing@0.8.0', version: '0.8.0' }),
+    lastTagShaFor: () => tagSha,
+    headSha: docsHead,
+    headMessage: 'docs: MKT-12 Update README',
+    githubReleaseMissingFor: (tag) => tag === '@singleton-sd/marketing@0.8.0',
+  });
+  assert.deepEqual(targets, [
+    {
+      name: '@singleton-sd/marketing',
+      version: '0.8.0',
+      tag: '@singleton-sd/marketing@0.8.0',
+      path: 'apps/marketing',
+      sha: tagSha,
+    },
+  ]);
+});
+
+test('pushCommitToMain returns HEAD after a fast-forward push', () => {
+  const git = (args) => {
+    const key = args.join(' ');
+    if (key === 'push origin HEAD:main') return '';
+    if (key === 'rev-parse HEAD') return 'landed-sha';
+    throw new Error(`unexpected git ${key}`);
+  };
+  assert.equal(pushCommitToMain(git), 'landed-sha');
+});
+
+test('pushCommitToMain fails closed when origin/main rejects the push', () => {
   /** @type {string[]} */
   const calls = [];
   const git = (args) => {
     const key = args.join(' ');
     calls.push(key);
-    if (key === 'push origin HEAD:main') {
-      pushes += 1;
-      if (pushes === 1) throw new Error('non-fast-forward');
-      return '';
-    }
-    if (key === 'fetch origin main') return '';
-    if (key === 'pull --rebase --autostash origin main') {
-      head = rebased;
-      return '';
-    }
-    if (key === 'rev-parse HEAD') return head;
+    if (key === 'push origin HEAD:main') throw new Error('non-fast-forward');
     throw new Error(`unexpected git ${key}`);
   };
 
-  assert.equal(pushCommitToMain(git), rebased);
-  assert.deepEqual(calls, [
-    'push origin HEAD:main',
-    'fetch origin main',
-    'pull --rebase --autostash origin main',
-    'push origin HEAD:main',
-    'rev-parse HEAD',
-  ]);
+  assert.throws(() => pushCommitToMain(git), /not rebasing a planned bump/);
+  assert.deepEqual(calls, ['push origin HEAD:main']);
 });
 
 test('planRelease is empty when commits are not releasable', () => {

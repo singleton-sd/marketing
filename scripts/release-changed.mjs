@@ -28,6 +28,7 @@ import {
   getCommitMessages,
   getCommitMessagesBetween,
   isAncestorOfHead,
+  isReleaseCommitMessage,
   latestReachableRelease,
   listGitTags,
   nextFreeVersion,
@@ -249,7 +250,7 @@ function ensureAnnotatedTag(tag, sha) {
 }
 
 /**
- * @param {{ name: string, version: string, tag: string, path: string }} pkg
+ * @param {{ name: string, version: string, tag: string, path: string, sha: string }} pkg
  * @param {string[]} tags
  */
 function notesForPackage(pkg, tags) {
@@ -262,21 +263,23 @@ function notesForPackage(pkg, tags) {
 }
 
 /**
- * @param {{ name: string, version: string, tag: string, path: string }[]} packages
+ * Confirm tags and GitHub Releases at each target's original SHA. Never
+ * retarget an existing tag onto a newer HEAD.
+ *
+ * @param {{ name: string, version: string, tag: string, path: string, sha: string }[]} packages
  * @param {string[]} tags
- * @param {string} headSha
  */
-function confirmExistingPublication(packages, tags, headSha) {
+function confirmExistingPublication(packages, tags) {
   if (!CI) {
-    console.log('HEAD is already a release; would confirm tags and GitHub Releases:');
+    console.log('Would confirm tags and GitHub Releases:');
     for (const pkg of packages) {
-      console.log(`  ${pkg.tag}`);
+      console.log(`  ${pkg.tag} @ ${pkg.sha}`);
     }
     return false;
   }
 
   for (const pkg of packages) {
-    ensureAnnotatedTag(pkg.tag, headSha);
+    ensureAnnotatedTag(pkg.tag, pkg.sha);
     ensureGitHubRelease(pkg.tag, notesForPackage(pkg, tags));
   }
 
@@ -291,7 +294,7 @@ function confirmExistingPublication(packages, tags, headSha) {
  * @param {string[]} tags
  * @param {string} headSha
  * @param {string} headMessage
- * @returns {boolean}
+ * @returns {'none' | 'stop' | 'continue'}
  */
 function retryExistingPublicationIfNeeded(tags, headSha, headMessage) {
   const targets = selectRetryTargets({
@@ -300,10 +303,13 @@ function retryExistingPublicationIfNeeded(tags, headSha, headMessage) {
     lastTagShaFor: (tag) => commitForTag(tag),
     headSha,
     headMessage,
+    githubReleaseMissingFor: CI ? (tag) => !githubReleaseExists(tag) : undefined,
   });
-  if (targets.length === 0) return false;
-  confirmExistingPublication(targets, tags, headSha);
-  return true;
+  if (targets.length === 0) return 'none';
+  confirmExistingPublication(targets, tags);
+  const headCovered =
+    isReleaseCommitMessage(headMessage) || targets.some((target) => target.sha === headSha);
+  return headCovered ? 'stop' : 'continue';
 }
 
 function main() {
@@ -315,12 +321,16 @@ function main() {
   const headSha = runGit(['rev-parse', 'HEAD']);
   const headMessage = runGit(['log', '-1', '--format=%B']);
 
-  if (retryExistingPublicationIfNeeded(tags, headSha, headMessage)) {
+  const retry = retryExistingPublicationIfNeeded(tags, headSha, headMessage);
+  if (retry === 'stop') {
     return;
   }
 
   const packages = listWorkspacePackages();
   if (packages.length === 0) {
+    if (retry === 'continue') {
+      return;
+    }
     console.log('No workspace packages found.');
     setOutput('released', 'false');
     return;
@@ -349,6 +359,9 @@ function main() {
   }
 
   if (releases.length === 0) {
+    if (retry === 'continue') {
+      return;
+    }
     console.log('Nothing to release.');
     setOutput('released', 'false');
     return;

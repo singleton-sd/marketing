@@ -141,11 +141,15 @@ export function shouldRetryPublication(headMessage, last, headSha, lastTagSha) {
 }
 
 /** @typedef {{ name: string, version: string, path: string }} RetryPackage */
-/** @typedef {{ name: string, version: string, tag: string, path: string }} RetryTarget */
+/** @typedef {{ name: string, version: string, tag: string, path: string, sha: string }} RetryTarget */
 
 /**
- * Packages to confirm (tag + GitHub Release) when HEAD is already a release.
- * Independent packages whose version still matches their last tag are skipped.
+ * Packages to confirm (tag + GitHub Release). Independent packages whose
+ * version still matches their last tag are skipped unless that tag is
+ * missing its GitHub Release.
+ *
+ * Confirm at the existing tag SHA when one exists. Never retarget a tag onto
+ * a newer HEAD (for example a later documentation commit).
  *
  * @param {{
  *   packages: RetryPackage[],
@@ -153,10 +157,18 @@ export function shouldRetryPublication(headMessage, last, headSha, lastTagSha) {
  *   lastTagShaFor: (tag: string) => string | null,
  *   headSha: string,
  *   headMessage: string,
+ *   githubReleaseMissingFor?: (tag: string) => boolean,
  * }} input
  * @returns {RetryTarget[]}
  */
-export function selectRetryTargets({ packages, lastFor, lastTagShaFor, headSha, headMessage }) {
+export function selectRetryTargets({
+  packages,
+  lastFor,
+  lastTagShaFor,
+  headSha,
+  headMessage,
+  githubReleaseMissingFor,
+}) {
   const releaseHead = isReleaseCommitMessage(headMessage);
   /** @type {RetryTarget[]} */
   const targets = [];
@@ -164,9 +176,29 @@ export function selectRetryTargets({ packages, lastFor, lastTagShaFor, headSha, 
   for (const pkg of packages) {
     const last = lastFor(pkg.name);
     const lastTagSha = last ? lastTagShaFor(last.tag) : null;
+    const releaseMissing = Boolean(
+      last && githubReleaseMissingFor && githubReleaseMissingFor(last.tag),
+    );
 
     if (last && lastTagSha === headSha) {
-      targets.push({ name: pkg.name, version: last.version, tag: last.tag, path: pkg.path });
+      targets.push({
+        name: pkg.name,
+        version: last.version,
+        tag: last.tag,
+        path: pkg.path,
+        sha: lastTagSha,
+      });
+      continue;
+    }
+
+    if (last && lastTagSha && releaseMissing) {
+      targets.push({
+        name: pkg.name,
+        version: last.version,
+        tag: last.tag,
+        path: pkg.path,
+        sha: lastTagSha,
+      });
       continue;
     }
 
@@ -176,6 +208,7 @@ export function selectRetryTargets({ packages, lastFor, lastTagShaFor, headSha, 
         version: pkg.version,
         tag: tagNameFor(pkg.name, pkg.version),
         path: pkg.path,
+        sha: headSha,
       });
     }
   }
@@ -184,29 +217,24 @@ export function selectRetryTargets({ packages, lastFor, lastTagShaFor, headSha, 
 }
 
 /**
- * Push HEAD to origin/main, rebasing on rejection. Returns the SHA that
- * landed on main after any rebase.
+ * Push HEAD to origin/main. Returns the SHA that landed on main.
+ *
+ * Do not rebase a planned bump onto commits that arrived after planning —
+ * those commits would sit under the new tag without a version or changelog
+ * entry. Fail closed so the next run replans from the updated main.
  *
  * @param {(args: string[]) => string} [git]
  */
 export function pushCommitToMain(git = (args) => runGit(args)) {
-  const maxAttempts = 3;
-  /** @type {unknown} */
-  let lastError;
-
-  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    try {
-      git(['push', 'origin', 'HEAD:main']);
-      return git(['rev-parse', 'HEAD']);
-    } catch (error) {
-      lastError = error;
-      if (attempt === maxAttempts) break;
-      git(['fetch', 'origin', 'main']);
-      git(['pull', '--rebase', '--autostash', 'origin', 'main']);
-    }
+  try {
+    git(['push', 'origin', 'HEAD:main']);
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `origin/main moved during release; not rebasing a planned bump. Re-run so the next plan includes those commits. ${detail}`,
+    );
   }
-
-  throw lastError;
+  return git(['rev-parse', 'HEAD']);
 }
 
 /**
