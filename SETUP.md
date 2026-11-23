@@ -63,11 +63,18 @@ Canonical origin in Astro/`config.yml`: `https://www.singletonsd.com`.
 
 ## Releases
 
-Path-aware bumps (same model as poc-plattform-kit): each `@singleton-sd/*`
-package versions independently from conventional commits on its watch paths.
+Path-aware bumps: each `@singleton-sd/*` package versions independently from
+conventional commits on its watch paths. The **singleton-release** GitHub App
+(on the main ruleset bypass list) commits the bump to `main`. Configure
+`vars.RELEASE_APP_ID` and `secrets.RELEASE_APP_PRIVATE_KEY`; the workflow
+fails if either is missing and never falls back to `GITHUB_TOKEN` for the
+push.
+
 On `main`, `.github/workflows/release.yml` runs `pnpm release:ci`, writes the
-root bump index + marketing product changelog / JSON, tags
-`@scope/name@version`, then dispatches `pages.yml`.
+root bump index + marketing product changelog / JSON, commits
+`chore(release): vX.Y.Z [skip ci]`, tags `@scope/name@version`, creates the
+GitHub Release, then dispatches `pages.yml` (the `[skip ci]` commit does not
+trigger Pages on push).
 
 Public **What’s new** page: `/changelog` (see `docs/client-changelog.md`).
 
@@ -79,7 +86,7 @@ pnpm changelog:test
 pnpm changelog:check
 ```
 
-CI / real release (bots only — pushes to `main`):
+CI / real release (singleton-release app only — pushes to `main`):
 
 ```sh
 pnpm release:ci

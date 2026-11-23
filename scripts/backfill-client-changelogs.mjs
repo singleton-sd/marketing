@@ -3,13 +3,15 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import semver from 'semver';
 import {
   CLIENT_CHANGELOG_TARGETS,
   clientFacingChanges,
   formatProductChangelog,
   parseProductChangelog,
 } from './client-changelog.mjs';
+import { versionsFromTags } from './git-release.mjs';
+
+export { versionsFromTags } from './git-release.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const PRODUCTS = {
@@ -18,14 +20,6 @@ const PRODUCTS = {
 
 function git(args) {
   return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim();
-}
-
-export function versionsFromTags(product, tags) {
-  const prefix = `${product}@`;
-  return tags
-    .filter((tag) => tag.startsWith(prefix) && semver.valid(tag.slice(prefix.length)))
-    .map((tag) => ({ tag, version: tag.slice(prefix.length) }))
-    .sort((left, right) => semver.compare(left.version, right.version));
 }
 
 export function assertCompleteTagHistory(product, existingReleases, taggedVersions) {

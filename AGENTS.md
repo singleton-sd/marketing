@@ -31,8 +31,8 @@ Azure resources from an agent. See [`docs/deployment.md`](docs/deployment.md).
 
 - Feature branches: `feature/MKT-<n>-<kebab>` in a worktree when possible
 - Human PRs get Pages previews from `.github/workflows/preview.yml`
-- Never add extra hosting secrets. `gh-pages` pushes mint the
-  singleton-release GitHub App token (`vars.RELEASE_APP_ID` +
+- Never add extra hosting secrets. `gh-pages` pushes and release commits mint
+  the singleton-release GitHub App token (`vars.RELEASE_APP_ID` +
   `secrets.RELEASE_APP_PRIVATE_KEY`); do not fall back to `GITHUB_TOKEN` or a PAT
 
 ## Sources of truth (poc)
@@ -48,7 +48,7 @@ pnpm install
 pnpm dev
 pnpm --filter @singleton-sd/marketing build
 pnpm release          # dry-run path-aware package bumps
-pnpm release:ci       # bump, CHANGELOG, commit, tag, push (CI only)
+pnpm release:ci       # bump, CHANGELOG, commit, tag, push, GitHub Release (CI only)
 pnpm changelog:test   # client-facing changelog unit tests
 pnpm changelog:check  # MD ↔ JSON projection drift check
 ```
@@ -61,13 +61,13 @@ pnpm changelog:check  # MD ↔ JSON projection drift check
 | commitlint | Conventional commits + `MKT-<n>` ticket rule (`.commitlintrc.cjs`) |
 | `scripts/release-changed.mjs` | Path-aware SemVer bumps per `@singleton-sd/*` package |
 | `scripts/client-changelog.mjs` | Client-facing `/changelog` Markdown + JSON projections |
-| release-it | Available for manual/single-package use (`.release-it.json`; git/GitHub off) |
 | Root `CHANGELOG.md` | Date sections with package bump index |
 | `apps/marketing/CHANGELOG.md` | Canonical product release notes → `/changelog` |
 
 Branch names: `feature/MKT-<n>-slug`, `hotfix/MKT-<n>-slug`, `release/vX.Y.Z`, or `main`.
 
-Package tags: `@singleton-sd/marketing@x.y.z`.
+Package tags: `@singleton-sd/marketing@x.y.z`. The singleton-release GitHub App
+commits `chore(release): vX.Y.Z [skip ci]` to `main`.
 
 Decap `/admin` login uses the API gateway
 (`https://api.singletonsd.com/v1/cms-auth/auth`). Callback is
